@@ -165,9 +165,23 @@ console.log('\n4) weight 只認 1 / 2')
   const cv = scratchWeight(s.runtime.recalls[c])
   ok(cv >= 1 && cv <= WEIGHT.max, `weight 1.5 被四捨五入並夾住（實際 ${cv}）`)
 
-  const d = mk('沒給 weight')
+  // ⚠️ 2026-11-25 改（本人第 11 條）：**沒 query 且沒給 weight ⇒ 視為 0**。
+  //    舊斷言寫「沒給 weight → 預設 1」，那正是 bug：
+  //    `silt_recall tier:4`（沒 query、沒 weight）每條 +1，掃三次就升。
+  //    「沒給」不是「模型顯式判斷它值 1」，只是它沒想過；掃描按規矩不該給份量。
+  const d = mk('沒 query 也沒給 weight')
   s.recall({ tier: 4, limit: 30 })
-  ok(scratchWeight(s.runtime.recalls[d]) === WEIGHT.default, `沒給 weight → 預設 ${WEIGHT.default}（實際 ${scratchWeight(s.runtime.recalls[d])}）`)
+  ok(scratchWeight(s.runtime.recalls[d]) === 0, `沒 query、沒給 weight → 0（實際 ${scratchWeight(s.runtime.recalls[d])}）`)
+
+  // 但**明確給**就不一樣：同樣沒 query，說明是模型自己判斷的
+  const e2 = mk('沒 query 但明確給了 1')
+  s.recall({ tier: 4, limit: 30, weight: 1 })
+  ok(scratchWeight(s.runtime.recalls[e2]) === 1, `沒 query 但明給 weight:1 → 1（實際 ${scratchWeight(s.runtime.recalls[e2])}）`)
+
+  // 有 query 的 targeted recall，沒給 weight 時退回 default（算一次順帶想起）
+  const f2 = mk('帶 query 沒給 weight')
+  s.recall({ query: '帶 query', limit: 30 })
+  ok(scratchWeight(s.runtime.recalls[f2]) === WEIGHT.default, `帶 query、沒給 weight → 預設 ${WEIGHT.default}（實際 ${scratchWeight(s.runtime.recalls[f2])}）`)
 }
 
 rmSync(home, { recursive: true, force: true })

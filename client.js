@@ -237,6 +237,7 @@ window.__ModuleLoader__.load({
         ledger_importing: 'verifying the chain…',
         ledger_import_done: 'Imported {n} records (chain {chain}); the old ledger is kept as {replaced}.',
         ledger_import_bad: 'Import refused: {err}',
+        ledger_import_confirm: 'Importing replaces the whole ledger (history included). The old file is kept aside, but the chain restarts from the imported one. Continue?',
 
         /* 時間與通用 */
         just_now: 'just now',
@@ -457,6 +458,7 @@ window.__ModuleLoader__.load({
         ledger_importing: '正在驗鏈…',
         ledger_import_done: '已導入 {n} 筆（鏈 {chain}）；舊帳留在 {replaced}。',
         ledger_import_bad: '導入被拒：{err}',
+        ledger_import_confirm: '導入會取代整本帳（連歷史一起換掉）。舊檔會留一份，但鏈條從導入的那本重新開始。要繼續嗎？',
 
         /* 時間與通用 */
         just_now: '剛剛',
@@ -1540,7 +1542,15 @@ window.__ModuleLoader__.load({
         setBusy('ledger.import')
         try {
           const text = await file.text()
-          const res = await post('/ledger.import', { text, source: file.name }, { quiet: true })
+          // ⚠️ 2026-11-25：這裡的註解一直寫「只有本人再按一次才真的接上」，但程式碼直接送了。
+          //    導入會**取代整本帳**，比清空重來更 destructive，所以真的要做一次確認。
+          //    後端 /ledger.import 現在也要 confirm:true（跟 /reset 同一道閘）。
+          const okGo = typeof window === 'undefined' ? true : window.confirm(t('ledger_import_confirm'))
+          if (!okGo) {
+            setBusy('')
+            return
+          }
+          const res = await post('/ledger.import', { text, source: file.name, confirm: true }, { quiet: true })
           if (res?.ok) {
             setNote(t('ledger_import_done', { n: res.imported, chain: res.chain?.ok ? t('chain_ok') : t('chain_sealed'), replaced: res.replaced || '—' }))
           } else {
