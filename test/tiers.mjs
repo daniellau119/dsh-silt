@@ -116,6 +116,24 @@ console.log('\n3) T4：半衰期跟著 TTL 走（2026-11-25），TTL 預設 48 �
   rmSync(legacyHome, { recursive: true, force: true })
   ok(!isExpired(mem(30), {}, { tier4TtlHours: 48 }), 'tier4TtlHours 48 時，30 小時還活著')
 
+  // ⭐ 範圍 24–168（2026-11-25 本人定），0 = 不過期 是特例、不該被夾成 24
+  const clampHome = mkdtempSync(join(tmpdir(), 'silt-clamp-'))
+  const cs = new Store(clampHome).load()
+  cs.cfg = { ...cs.cfg, enabled: true }
+  const set = (v) => cs.saveConfig({ tier4TtlHours: v }).tier4TtlHours
+  ok(set(48) === 48, '48 → 48')
+  ok(set(24) === 24, '24（下限）→ 24')
+  ok(set(168) === 168, '168（上限）→ 168')
+  ok(set(10) === 24, `10 → 夾到下限 24（實際 ${set(10)}）`)
+  ok(set(5000) === 168, `5000 → 夾到上限 168（實際 ${set(5000)}）`)
+  ok(set(0) === 0, `0 → 0（不過期是特例，不夾成 24；實際 ${set(0)}）`)
+  // 讀檔時也洗：手改過的 config.json 寫了超出範圍的值
+  writeFileSync(join(clampHome, 'config.json'), JSON.stringify({ enabled: true, tier4TtlHours: 2160 }), 'utf8')
+  ok(new Store(clampHome).load().cfg.tier4TtlHours === 168, '檔案裡寫 2160（舊版範圍）讀進來被夾到 168')
+  writeFileSync(join(clampHome, 'config.json'), JSON.stringify({ enabled: true, tier4TtlHours: 0 }), 'utf8')
+  ok(new Store(clampHome).load().cfg.tier4TtlHours === 0, '檔案裡寫 0 仍然是 0（特例不被洗掉）')
+  rmSync(clampHome, { recursive: true, force: true })
+
   // 用 bornAt 算，不是 firstSeen：firstSeen 截到小時，會讓條目最多早退 59 分鐘
   const justBorn = { id: 'b', tier: 4, importance: 0.4, bornAt: new Date().toISOString(), firstSeen: '2000-01-01' }
   ok(!isExpired(justBorn, {}, { tier4TtlHours: 48 }), '剛出生的 T4 不會因為 firstSeen 很舊就被判過期')

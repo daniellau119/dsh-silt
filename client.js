@@ -2150,7 +2150,7 @@ window.__ModuleLoader__.load({
           // 條數不再手動調：它由 injectBudget 推導（每 50 字一個位置），所以這裡只顯示推導結果。
           h('div', { className: 'mn-hint' }, `${t('n_slots')} ${state.derivedSlots ?? Math.floor((cfg.injectBudget || 0) / 50)}`),
           h(Num, { label: t('n_budget'), value: cfg.injectBudget, min: 600, max: 3200, onCommit: (v) => void post('/config', { patch: { injectBudget: v } }) }),
-          h(Num, { label: t('n_ttl'), value: cfg.tier4TtlHours ?? 48, min: 0, max: 2160, onCommit: (v) => void post('/config', { patch: { tier4TtlHours: v } }) }),
+          h(Num, { label: t('n_ttl'), value: cfg.tier4TtlHours ?? 48, min: 0, max: 168, onCommit: (v) => void post('/config', { patch: { tier4TtlHours: v } }) }),
         ),
         h(
           'div',

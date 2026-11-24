@@ -48,7 +48,7 @@ The whole design comes down to four sentences:
 | **T1** | Facts and rules: facts that stay true, and rules to follow every time | 200 | 100 yr | ✅ |
 | **T2** | Gists settled out of experience | 200 | 720 d | ✅ |
 | **T3** | Experiences worth keeping (**no project details**) | 1000 | 180 d | ✅ |
-| **T4** | Scratch: undecided, parked for now | 300 | 8 h (lives 24 h) | ❌ |
+| **T4** | Scratch: undecided, parked for now | 300 | follows TTL (48 h default) | ❌ |
 | **T5** | Forecasts: not yet happened, has a deadline | 400 | — | ✅ even after expiry |
 
 > **Why T1 takes rules**: something the owner repeats has nowhere else to go but T3 —
