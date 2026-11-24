@@ -178,6 +178,68 @@ console.log('\nknobProvenance：看得出旋鈕是誰訂的')
   ok(prov2.injectBudget.setBy === 'model', 'saveConfig 不寫帳本 ⇒ 仍然是帳本上最後一筆的 actor')
 }
 
+console.log('\n⑨ pendingSay 的時區：at 是東八區，atUtc 才是 UTC')
+{
+  const s = fresh()
+  s.pendingSay({ text: '時區測試' })
+  const st = s.speakState()
+  const p = st.pendingSays[0]
+  ok(typeof p.at === 'string', '有 at')
+  ok(typeof p.atUtc === 'string', '有 atUtc')
+  ok(/-?\+?08:?00| \+08/.test(p.at) || p.at.includes(' '), `at 已經不是 ISO 的裸 UTC（${p.at}）`)
+  ok(/Z$/.test(p.atUtc), `atUtc 是純 UTC ISO（${p.atUtc}）`)
+  // 兩個時間差八小時 —— 這就是「拿 at 比 now 會差八小時」的證據
+  const gapHours = (Date.parse(p.atUtc) - Date.parse(p.at.replace(' ', 'T') + '+08:00')) / 3600000
+  ok(Math.abs(gapHours) < 0.01, `at 和 atUtc 指的是同一時刻（差 ${gapHours.toFixed(2)} 小時）—— 但拿 at 直接比 now 就會差八小時`)
+}
+
+console.log('\n⑩ silt_speak 的 op 字串乾淨（沒有前導/尾隨空格）')
+{
+  // 知識庫裡那版是 enum ['read','say','defer ',...] + if (a.op === ' hold')。
+  // 如果實際檔案真是那樣，defer 和 hold 兩個 op 都是死的，而 §6.5 一半動作靠它們。
+  const { readFileSync } = await import('node:fs')
+  const src = readFileSync(new URL('../lib/tools.js', import.meta.url), 'utf8')
+  const i = src.indexOf("name: 'silt_speak'")
+  const j = src.indexOf("name: 'silt_bili'")
+  const block = src.slice(i, j > i ? j : undefined)
+  const m = block.match(/enum:\s*\[([^\]]+)\]/)
+  ok(Boolean(m), '找得到 silt_speak 的 op enum')
+  const opts = String(m?.[1] || '').split(',').map((x) => x.trim().replace(/^'|'$/g, ''))
+  ok(opts.includes('defer'), `enum 含 defer（無空格）`)
+  ok(opts.includes('hold'), `enum 含 hold（無空格）`)
+  ok(!/'\s+\w|\w\s+'/.test(String(m?.[1] || '')), 'enum 裡沒有前導或尾隨空格')
+  ok(/a\.op === 'defer'/.test(block), `execute 比對的是 'defer'（不是 ' defer'）`)
+  ok(/a\.op === 'hold'/.test(block), `execute 比對的是 'hold'（不是 'hold '）`)
+}
+
+console.log('\n⑪ §6 過期的 T5 要接上 silt_speak（不能叫它去 void）')
+{
+  const { readFileSync } = await import('node:fs')
+  const src = readFileSync(new URL('../lib/duty.js', import.meta.url), 'utf8')
+  const i = src.indexOf("'6. 未來的約定'")
+  const j = src.indexOf("'6.5 主動開口'")
+  ok(i > 0 && j > i, '找得到第 6 節和第 6.5 節')
+  const sec6 = src.slice(i, j)
+  ok(sec6.includes('silt_speak'), '第 6 節提到走 silt_speak 去問')
+  ok(sec6.includes('不能 void'), '第 6 節明說這一輪不能 void')
+  // ⚠️ 只看活的字串 —— 註解裡會引用那句舊話（說明刪了什麼），那種引用不算還在。
+  const sec6Live = sec6.split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n')
+  ok(!/如果想到什麼/.test(sec6Live), '刪掉了「如果想到什麼」—— 那是邀它憑空推測')
+  ok(sec6Live.includes('這一輪讀到的記憶'), '改成從讀到的東西出發')
+  ok(sec6Live.includes('hold'), '不合適時可以 hold 掛著')
+}
+
+console.log('\n⑫ 時區那句在 §6.5 裡（比時間用 atUtc，不是 at / nowLocal）')
+{
+  const { readFileSync } = await import('node:fs')
+  const src = readFileSync(new URL('../lib/duty.js', import.meta.url), 'utf8')
+  const i = src.indexOf("'6.5 主動開口'")
+  const j = src.indexOf("'7. 對本人了解'")
+  const sec65 = src.slice(i, j)
+  ok(sec65.includes('atUtc'), '第 6.5 節提到 atUtc')
+  ok(/不要拿 nowLocal/.test(sec65), '明說不要拿 nowLocal 去比')
+}
+
 rmSync(home, { recursive: true, force: true })
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
