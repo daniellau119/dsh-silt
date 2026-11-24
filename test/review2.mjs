@@ -173,9 +173,11 @@ console.log('\nknobProvenance：看得出旋鈕是誰訂的')
   ok(prov1.injectBudget.setBy === 'model', `模型調過 ⇒ model（實際 ${prov1.injectBudget.setBy}）`)
 
   s.saveConfig({ injectBudget: 3200 })
-  // saveConfig 沒寫帳本記錄，所以 provenance 仍然看帳本 —— 這裡確認它不會謊報成 user
+  // ⚠️ 2026-11-25 改：saveConfig **現在會落帳**（本人第 2 條），而且 actor 是 'user'。
+  //    舊斷言寫的是「saveConfig 不寫帳本 ⇒ 仍然是 model」—— 那正是要修的 bug：
+  //    頁面改的看不見 ⇒ setBy 回 default ⇒ 反思判定「沒人訂過，可以調」。
   const prov2 = s.knobProvenance(['injectBudget'])
-  ok(prov2.injectBudget.setBy === 'model', 'saveConfig 不寫帳本 ⇒ 仍然是帳本上最後一筆的 actor')
+  ok(prov2.injectBudget.setBy === 'user', `頁面改設定（saveConfig）現在會落帳 ⇒ setBy 變 user（實際 ${prov2.injectBudget.setBy}）`)
 }
 
 console.log('\n⑨ pendingSay 的時區：at 是東八區，atUtc 才是 UTC')

@@ -39,7 +39,10 @@ console.log('1) condensing an old T3 into a T2 keeps the original date')
   const t2 = s.memories.get(res.memory.id)
   console.log(`       T2 firstSeen = ${t2.firstSeen} | bornAt = ${t2.bornAt?.slice(0, 10)}`)
   ok(String(t2.firstSeen).startsWith('2023'), `firstSeen kept the 2023 date (got ${t2.firstSeen})`)
-  ok(String(t2.bornAt).startsWith(String(new Date().getFullYear())), 'bornAt is today (when it settled)')
+  // ⚠️ 2026-11-25（本人第 5 條）：bornAt 也要沿用原條。
+  //    舊斷言是「bornAt is today（沉澱那一刻）」—— 那正是 bug：
+  //    salience 讀 bornAt，age≈0 會讓一條三年前的事亮度回滿、排到注入最前面。
+  ok(String(t2.bornAt).startsWith('2023'), `bornAt 沿用原條（2023），不是今天 —— 否則亮度會回滿（got ${t2.bornAt?.slice(0, 10)}）`)
 
   const line = s.injectionText().split('\n').find((l) => l.includes('舊事'))
   console.log(`       prompt line: ${line}`)

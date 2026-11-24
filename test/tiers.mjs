@@ -128,10 +128,18 @@ console.log('\n3) T4：半衰期跟著 TTL 走（2026-11-25），TTL 預設 48 �
   ok(set(5000) === 168, `5000 → 夾到上限 168（實際 ${set(5000)}）`)
   ok(set(0) === 0, `0 → 0（不過期是特例，不夾成 24；實際 ${set(0)}）`)
   // 讀檔時也洗：手改過的 config.json 寫了超出範圍的值
-  writeFileSync(join(clampHome, 'config.json'), JSON.stringify({ enabled: true, tier4TtlHours: 2160 }), 'utf8')
-  ok(new Store(clampHome).load().cfg.tier4TtlHours === 168, '檔案裡寫 2160（舊版範圍）讀進來被夾到 168')
-  writeFileSync(join(clampHome, 'config.json'), JSON.stringify({ enabled: true, tier4TtlHours: 0 }), 'utf8')
-  ok(new Store(clampHome).load().cfg.tier4TtlHours === 0, '檔案裡寫 0 仍然是 0（特例不被洗掉）')
+  //
+  // ⚠️ 2026-11-25：要用**全新的目錄**。`saveConfig` 現在會落帳（本人第 2 條），
+  //    而 load() = 先讀 config.json、再重放帳本 —— 同一個目錄裡有舊帳本的話，
+  //    帳本裡的舊值會蓋掉剛寫進去的 2160，測到的就不是「洗檔」而是「replay」。
+  const washHome = mkdtempSync(join(tmpdir(), 'silt-wash-'))
+  writeFileSync(join(washHome, 'config.json'), JSON.stringify({ enabled: true, tier4TtlHours: 2160 }), 'utf8')
+  ok(new Store(washHome).load().cfg.tier4TtlHours === 168, '檔案裡寫 2160（舊版範圍）讀進來被夾到 168')
+  rmSync(washHome, { recursive: true, force: true })
+  const zeroHome = mkdtempSync(join(tmpdir(), 'silt-zero-'))
+  writeFileSync(join(zeroHome, 'config.json'), JSON.stringify({ enabled: true, tier4TtlHours: 0 }), 'utf8')
+  ok(new Store(zeroHome).load().cfg.tier4TtlHours === 0, '檔案裡寫 0 仍然是 0（特例不被洗掉）')
+  rmSync(zeroHome, { recursive: true, force: true })
   rmSync(clampHome, { recursive: true, force: true })
 
   // 用 bornAt 算，不是 firstSeen：firstSeen 截到小時，會讓條目最多早退 59 分鐘
