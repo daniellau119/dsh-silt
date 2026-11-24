@@ -30,8 +30,29 @@ const store = () => {
 
 console.log('0) 常量')
 ok(UPGRADE_THRESHOLD === 3, `門檻 = 3（實際 ${UPGRADE_THRESHOLD}）`)
-ok(WEIGHT.min === 1 && WEIGHT.max === 2, `WEIGHT 範圍 1–2（實際 ${WEIGHT.min}–${WEIGHT.max}）`)
+// ⚠️ 2026-11-25：0 是合法值（掃描不計份量），所以範圍是 0–2，不是 1–2。
+ok(WEIGHT.min === 0 && WEIGHT.max === 2, `WEIGHT 範圍 0–2（實際 ${WEIGHT.min}–${WEIGHT.max}）`)
+ok(WEIGHT.values.includes(0), '0 在 values 裡（掃描不計份量是有語義的值）')
 ok(WEIGHT.default === 1, `WEIGHT 預設 1（實際 ${WEIGHT.default}）`)
+
+console.log('\n0b) schema 的 enum 必須包含 0')
+{
+  // ⚠️ 2026-11-25 本人抓到的真 bug：schema 寫 enum:[1,2]，但反思提示詞第一句就是
+  //    「帶 weight: 0 去掃」—— 0 不在 enum ⇒ 整支 recall 被 schema 拒絕 ⇒ 第 3 節根本掃不動。
+  //    而且 WEIGHT.min 原本是 1，就算 schema 放行，0 也會被夾成 1（掃描反而算份量）。
+  //    這條直接讀原始碼確認兩邊一致。
+  const { readFileSync } = await import('node:fs')
+  const src = readFileSync(new URL('../lib/tools.js', import.meta.url), 'utf8')
+  const i = src.indexOf('name: \'silt_recall\'')
+  const j = src.indexOf('name: \'silt_remember\'')
+  const block = src.slice(i, j)
+  const m = block.match(/enum:\s*\[([^\]]+)\]/)
+  ok(Boolean(m), '找得到 weight 的 enum')
+  const values = String(m?.[1] || '').split(',').map((x) => Number(x.trim()))
+  ok(values.includes(0), `enum 包含 0（實際 [${values.join(', ')}]）`)
+  ok(values.includes(1) && values.includes(2), 'enum 也含 1 和 2')
+  ok(!/confidence/.test(block), 'recall 的 schema 裡沒有殘留舊名 confidence')
+}
 
 console.log('\n1) 算術：兩次認真，或三次順帶')
 {
@@ -125,9 +146,19 @@ console.log('\n4) weight 只認 1 / 2')
   s.recall({ tier: 4, limit: 30, weight: 9 })
   ok(scratchWeight(s.runtime.recalls[a]) === WEIGHT.max, `weight 9 被夾到 ${WEIGHT.max}（實際 ${scratchWeight(s.runtime.recalls[a])}）`)
 
-  const b = mk('低於下限 0')
+  // ⭐ 2026-11-25：0 不再是「低於下限」，它是**掃描**的語義 —— 完全不累加。
+  const b = mk('掃描給 0')
+  for (let i = 0; i < 5; i += 1) s.recall({ tier: 4, limit: 30, weight: 0 })
+  ok(scratchWeight(s.runtime.recalls[b]) === 0, `weight 0 掃五次，count 仍然是 0（實際 ${scratchWeight(s.runtime.recalls[b])}）`)
+
+  const b2 = mk('掃描之後真的想起')
   s.recall({ tier: 4, limit: 30, weight: 0 })
-  ok(scratchWeight(s.runtime.recalls[b]) === WEIGHT.min, `weight 0 被夾到 ${WEIGHT.min}（實際 ${scratchWeight(s.runtime.recalls[b])}）`)
+  s.recall({ tier: 4, limit: 30, weight: 2 })
+  ok(scratchWeight(s.runtime.recalls[b2]) === 2, `掃描不計 + 一次認真 = 2（實際 ${scratchWeight(s.runtime.recalls[b2])}）`)
+
+  const neg = mk('負數 -3')
+  s.recall({ tier: 4, limit: 30, weight: -3 })
+  ok(scratchWeight(s.runtime.recalls[neg]) === WEIGHT.min, `負數被夾到 ${WEIGHT.min}（實際 ${scratchWeight(s.runtime.recalls[neg])}）`)
 
   const c = mk('小數 1.5')
   s.recall({ tier: 4, limit: 30, weight: 1.5 })
