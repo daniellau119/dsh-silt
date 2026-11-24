@@ -1,5 +1,5 @@
-// 新半衰期（T2 720 / T3 180 / T4 7）的驗證
-import { mkdtempSync, rmSync } from 'node:fs'
+// 新半衰期（T2 720 / T3 180）的驗證；T4 沒有獨立半衰期，跟著 TTL 走（2026-11-25）
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -15,7 +15,8 @@ console.log('1) 新的基準半衰期')
 ok(TIERS[2].halfLifeDays === 720, `T2 = 720（實際 ${TIERS[2].halfLifeDays}）`)
 ok(TIERS[3].halfLifeDays === 180, `T3 = 180（實際 ${TIERS[3].halfLifeDays}）`)
 // 2026-11-20：T4 改成「雜項」，半衰期 8 小時
-ok(Math.abs(TIERS[4].halfLifeDays - 8 / 24) < 1e-9, `T4 = 8 小時（實際 ${(TIERS[4].halfLifeDays * 24).toFixed(2)} 小時）`)
+// 2026-11-25：T4 不再有獨立的半衰期 —— 它跟著 TTL 走（見下面第 3 節）
+ok(TIERS[4].halfLifeDays === undefined, 'T4 沒有獨立 halfLifeDays（半衰期跟著 TTL 走）')
 ok(TIERS[4].label === '雜項', `T4 標籤 = 雜項（實際 ${TIERS[4].label}）`)
 ok(TIERS[5].halfLifeDays === 30, 'T5 保持 30')
 ok(TIERS[1].halfLifeDays === 36500, 'T1 保持 36500')
@@ -79,24 +80,45 @@ console.log('\n1b) T1 收規則；日期可以寫；超過 200 字退回')
 console.log('\n2) T2/T3 比例 = 4 倍')
 ok(720 / 180 === 4, '720 / 180 = 4')
 
-console.log('\n3) T4 半衰期 8 小時，TTL 24 小時（清掉之前早就暗了）')
+console.log('\n3) T4：半衰期跟著 TTL 走（2026-11-25），TTL 預設 48 小時')
 {
   const H = 3600000
   const mem = (ageHours) => ({ id: 'x', tier: 4, importance: 0.4, bornAt: new Date(Date.now() - ageHours * H).toISOString() })
-  for (const h of [0, 8, 12, 24]) {
-    console.log(`       age ${String(h).padStart(2)} 小時 -> salience ${(salienceOf(mem(h), {}) / 0.4 * 100).toFixed(1)}%`)
+  const cfg = { tier4TtlHours: 48 }
+  for (const h of [0, 12, 24, 48]) {
+    console.log(`       age ${String(h).padStart(2)} 小時 -> salience ${(salienceOf(mem(h), {}, Date.now(), cfg) / 0.4 * 100).toFixed(1)}%`)
   }
-  ok(Math.abs(salienceOf(mem(8), {}) / 0.4 - 0.5) < 0.01, '8 小時正好掉一半')
-  const at24 = salienceOf(mem(24), {}) / 0.4
-  ok(Math.abs(at24 - 0.125) < 0.01, `24 小時只剩 12.5%（實際 ${(at24 * 100).toFixed(1)}%）`)
+  // 半衰期 = TTL ⇒ 走完 48 小時剛好掉一半
+  const at48 = salienceOf(mem(48), {}, Date.now(), cfg) / 0.4
+  ok(Math.abs(at48 - 0.5) < 0.01, `48 小時正好掉一半（實際 ${(at48 * 100).toFixed(1)}%）`)
+  const at24 = salienceOf(mem(24), {}, Date.now(), cfg) / 0.4
+  ok(Math.abs(at24 - Math.SQRT1_2) < 0.01, `24 小時掉到 √½（實際 ${(at24 * 100).toFixed(1)}%）`)
+
+  // ⭐ 改 TTL 就改亮度 —— 這正是「不要兩個獨立數字」的意思
+  const ttl24 = salienceOf(mem(24), {}, Date.now(), { tier4TtlHours: 24 }) / 0.4
+  ok(Math.abs(ttl24 - 0.5) < 0.01, 'TTL 設 24，則 24 小時剛好掉一半（亮度跟著 TTL 走）')
+
+  // TIERS[4] 故意沒有 halfLifeDays：有它就會變成第二個數字
+  ok(TIERS[4].halfLifeDays === undefined, 'TIERS[4] 沒有獨立的 halfLifeDays')
+
   const s = new Store(process.env.DSH_SILT_HOME).load()
-  ok(s.cfg.tier4TtlHours === 24, `預設 TTL = 24 小時（實際 ${s.cfg.tier4TtlHours}）`)
-  s.cfg = { ...s.cfg, tier4TtlHours: 24 }
-  ok(!isExpired(mem(23), {}, s.cfg), '23 小時還活著')
-  ok(isExpired(mem(25), {}, s.cfg), '25 小時淘汰')
-  // 舊欄位名（天）仍然認：只有 tier4TtlDays: 1 應該換算成 24 小時
-  ok(isExpired(mem(25), {}, { tier4TtlDays: 1 }), '舊欄位 tier4TtlDays:1 也按 24 小時算')
-  ok(!isExpired(mem(30), {}, { tier4TtlHours: 48 }), 'tier4TtlHours 蓋過舊欄位')
+  ok(s.cfg.tier4TtlHours === 48, `預設 TTL = 48 小時（實際 ${s.cfg.tier4TtlHours}）`)
+  ok(!isExpired(mem(47), {}, { tier4TtlHours: 48 }), '47 小時還活著')
+  ok(isExpired(mem(49), {}, { tier4TtlHours: 48 }), '49 小時淘汰')
+  ok(!isExpired(mem(9999), {}, { tier4TtlHours: 0 }), 'TTL=0 表示不過期（語義留著）')
+  // 舊欄位名（天）的相容在 load() 裡做，不在 isExpired 裡 —— 要測就測 load 那一層。
+  // 直接傳給 isExpired 的舊欄位名不會被認，那本來就是對的。
+  const legacyHome = mkdtempSync(join(tmpdir(), 'silt-legacy-'))
+  writeFileSync(join(legacyHome, 'config.json'), JSON.stringify({ enabled: true, tier4TtlDays: 1 }), 'utf8')
+  const legacy = new Store(legacyHome).load()
+  ok(legacy.cfg.tier4TtlHours === 24, `舊欄位 tier4TtlDays:1 換算成 24 小時（實際 ${legacy.cfg.tier4TtlHours}）`)
+  ok(!('tier4TtlDays' in legacy.cfg), '換算完舊欄位從 cfg 裡刪掉（不會被回寫）')
+  rmSync(legacyHome, { recursive: true, force: true })
+  ok(!isExpired(mem(30), {}, { tier4TtlHours: 48 }), 'tier4TtlHours 48 時，30 小時還活著')
+
+  // 用 bornAt 算，不是 firstSeen：firstSeen 截到小時，會讓條目最多早退 59 分鐘
+  const justBorn = { id: 'b', tier: 4, importance: 0.4, bornAt: new Date().toISOString(), firstSeen: '2000-01-01' }
+  ok(!isExpired(justBorn, {}, { tier4TtlHours: 48 }), '剛出生的 T4 不會因為 firstSeen 很舊就被判過期')
 }
 
 console.log('\n4) T3 在 180 天時亮度剛好一半（壓縮 175 天落 T2）')

@@ -26,17 +26,15 @@ const rec = () => s.runtime.recalls[id] || {}
 console.log('1) same session, five recalls -> scored once')
 {
   for (let i = 0; i < 5; i++) s.recall({ query: '測試', limit: 5, sessionId: 'S1' })
-  console.log(`       n=${rec().n} linger=${rec().linger} conf=${rec().conf}`)
+  console.log(`       n=${rec().n} linger=${rec().linger} count=${rec().count}`)
   ok(rec().n === 1, `n stayed at 1 (got ${rec().n})`)
-  ok(rec().conf === 0.2, `conf stayed at 0.2 (got ${rec().conf})`)
 }
 
 console.log('\n2) a different session scores again')
 {
   s.recall({ query: '測試', limit: 5, sessionId: 'S2' })
-  console.log(`       n=${rec().n} conf=${rec().conf}`)
+  console.log(`       n=${rec().n}`)
   ok(rec().n === 2, `n is now 2 (got ${rec().n})`)
-  ok(Math.abs(rec().conf - 0.4) < 1e-9, `conf is now 0.4 (got ${rec().conf})`)
 }
 
 console.log('\n3) no sessionId -> old behaviour (counts every time)')

@@ -1780,7 +1780,7 @@ window.__ModuleLoader__.load({
           ),
         ),
         pageRows.length === 0
-          ? h('div', { className: 'mn-empty' }, activeTier === 4 ? '雜項區是空的（這裡放歸不了類的先擱著的東西，24 小時沒人想起就散了）' : t('empty_memory'))
+          ? h('div', { className: 'mn-empty' }, activeTier === 4 ? '雜項區是空的（這裡放歸不了類的先擱著的東西，48 小時沒人想起就散了）' : t('empty_memory'))
           : pageRows.map((m) => {
               const open = Boolean(openMem[m.id])
               const bvid = (m.evidence || []).find?.((e) => e.bvid)?.bvid || ''
@@ -2150,7 +2150,7 @@ window.__ModuleLoader__.load({
           // 條數不再手動調：它由 injectBudget 推導（每 50 字一個位置），所以這裡只顯示推導結果。
           h('div', { className: 'mn-hint' }, `${t('n_slots')} ${state.derivedSlots ?? Math.floor((cfg.injectBudget || 0) / 50)}`),
           h(Num, { label: t('n_budget'), value: cfg.injectBudget, min: 600, max: 3200, onCommit: (v) => void post('/config', { patch: { injectBudget: v } }) }),
-          h(Num, { label: t('n_ttl'), value: cfg.tier4TtlHours ?? 24, min: 0, max: 240, onCommit: (v) => void post('/config', { patch: { tier4TtlHours: v } }) }),
+          h(Num, { label: t('n_ttl'), value: cfg.tier4TtlHours ?? 48, min: 0, max: 2160, onCommit: (v) => void post('/config', { patch: { tier4TtlHours: v } }) }),
         ),
         h(
           'div',
