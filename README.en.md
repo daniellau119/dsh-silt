@@ -4,13 +4,13 @@
 
 [中文](README.md)
 
-> Cross-session memory and persona plugin for DSH · `v1.8.0` · 2026-11-19
+> Cross-session memory and persona plugin for DSH · `v1.9.0` · 2026-11-25
 
 `dsh-silt` is a long-term memory and persona-growth engine built for the DSH host process. It gives a model a memory that self-evolves, settles in layers, and can be interrogated — plus a persona card that grows out of the conversation itself.
 
 ---
 
-![DSH plugin](https://img.shields.io/badge/DSH-plugin-blue) ![version](https://img.shields.io/badge/v1.8.0-green) ![license](https://img.shields.io/badge/license-MIT-brightgreen)
+![DSH plugin](https://img.shields.io/badge/DSH-plugin-blue) ![version](https://img.shields.io/badge/v1.9.0-green) ![license](https://img.shields.io/badge/license-MIT-brightgreen)
 
 </div>
 
@@ -45,11 +45,22 @@ The whole design comes down to four sentences:
 
 | | What it is | Limit | Base half-life | In prompt |
 |:--:|---|:--:|:--:|:--:|
-| **T1** | Facts that stay true forever (name, birthday, stance) | 100 | 100 yr | ✅ |
+| **T1** | Facts and rules: facts that stay true, and rules to follow every time | 400 | 100 yr | ✅ |
 | **T2** | Gists settled out of experience | 200 | 720 d | ✅ |
-| **T3** | Experiences worth keeping | 1000 | 180 d | ✅ |
-| **T4** | Scratch: unsure whether it is worth keeping | 300 | 7 d | ❌ |
+| **T3** | Experiences worth keeping (**no project details**) | 1000 | 180 d | ✅ |
+| **T4** | Scratch: undecided, parked for now | 300 | 8 h (lives 24 h) | ❌ |
 | **T5** | Forecasts: not yet happened, has a deadline | 400 | — | ✅ even after expiry |
+
+> **Why T1 takes rules**: something the owner repeats has nowhere else to go but T3 —
+> and T3 is *experiences*, so a rule filed there reads as a past event and gets ignored next time.
+> A rule has to say "when this happens ⇒ do this ⇒ because of that", which is 200+ chars, hence 400.
+>
+> **Why T3 refuses project details**: which file changed, what got installed, how deep the debug went —
+> the code already records that. Spending a T3 slot on it only crowds out actual people and events.
+> Test: in a month, will you still care which file it was?
+>
+> **Why T4 never enters the prompt**: it is only "parked for now"; it becomes T3 once recalled
+> often enough. Not being in the prompt means its lifetime is **not** charged to the injection budget.
 
 **A half-life is how long brightness takes to halve, not when the memory is deleted** — and recall extends it:
 

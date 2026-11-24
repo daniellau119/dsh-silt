@@ -127,7 +127,7 @@ def table(headers, rows, widths=None):
 P('dsh-silt', bold=True, size=26, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=2)
 P('跨會話記憶與人格插件', bold=True, size=15, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=18)
 P('技術文檔', size=12, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=30)
-P('版本 v1.8.0 · 2026-11-19', size=10, align=WD_ALIGN_PARAGRAPH.CENTER)
+P('版本 v1.9.0 · 2026-11-25', size=10, align=WD_ALIGN_PARAGRAPH.CENTER)
 P('基於 silt 插件目前的實際程式碼', size=9, italic=True, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=40)
 
 P('本文檔描述插件目前真實的運作方式：資料怎麼存、記憶怎麼分層、什麼時候被壓縮、'
@@ -156,6 +156,7 @@ toc = [
     '15　可調參數總表',
     '16　常數速查',
     '17　心跳與主動開口',
+    '18　T1 擴成「事實與規則」，T3 禁收專案細節',
 ]
 for t in toc:
     P(t, size=10.5, space_after=2)
@@ -248,7 +249,7 @@ doc.add_heading('4　記憶的層級結構', level=1)
 table(
     ['層級', '名稱', '字數上限', '半衰期', '進倉庫', '進注入', '能改'],
     [
-        ['T1', '簡短事實', '100', '36500 天', '✅', '✅', '寫入即定'],
+        ['T1', '事實與規則', '400', '36500 天', '✅', '✅', '寫入即定'],
         ['T2', '壓縮大概', '200', '720 天', '✅', '✅', '不再壓（終態）'],
         ['T3', '經歷', '1000', '180 天', '✅', '✅', '每 7 天壓一次'],
         ['T4', '暫存區', '300', '7 天（TTL 30）', '❌', '❌', '置信度加夠 1 升 T3'],
@@ -808,7 +809,7 @@ doc.add_heading('16　常數速查', level=1)
 table(
     ['常數', '值', '位置'],
     [
-        ['T1 上限', '100 字', 'model.js TIERS[1].maxChars'],
+        ['T1 上限', '400 字', 'model.js TIERS[1].maxChars'],
         ['T2 上限', '200 字', 'model.js TIERS[2].maxChars'],
         ['T3 上限', '1000 字', 'model.js TIERS[3].maxChars'],
         ['T4 上限', '300 字', 'model.js TIERS[4].maxChars'],
@@ -916,6 +917,56 @@ P('修的時候差點把檢索也砍掉：recall 原本走 activeMemories()，�
   '但「不注入」不等於「不存在」—— 本人推翻過的事，之後可能會想問「我是不是記錯過什麼」。')
 code('注入 → activeMemories()      排除 voided\n'
      '檢索 → searchableMemories()   包含 voided（帶 voided: true）')
+
+doc.add_heading('18　T1 擴成「事實與規則」，T3 禁收專案細節', level=1)
+P('2026-11-25 本人針對「跑了七天效果不好」提的改進。核心不是加功能，是修兩處分類的病因。')
+
+doc.add_heading('18.1　T1 從 200 字擴到 400，並改叫「事實與規則」', level=2)
+P('舊語義：T1 只收「人與世界層的事實」（名字、生日、住哪裡）。問題是 —— '
+  '本人反覆交代的事**不屬於這一類**，可是它才是最該長久留住、每次都要照著做的東西。')
+P('於是規則只有兩條路：硬塞進 T3（變成「一段經歷」，下次翻到只當往事看），或被 description 暗示著別寫。'
+  '本人原話「有些規則根本沒記住或是沒有跟從，或是要說幾次」，機制層的原因就在這裡：**沒有一格是給規則的**。')
+P('上限從 200 提到 400，是因為一條講得清楚的規則要交代三件事：什麼情況 ⇒ 做什麼 ⇒ 為什麼。三句就兩百多字。')
+code('T1: { label: \'事實與規則\', maxChars: 400, halfLifeDays: 36500 }')
+P('400 仍然遠短於 T3 的 1000。放寬的是「單條怎麼寫」，不是「可以多寫幾條」—— '
+  'T1 幾乎不褪色，它的成本是**常駐**的，每一輪都在提示詞裡。')
+
+doc.add_heading('18.2　新增一道閘：T1 標題不能帶具體日期', level=2)
+P('放開 T1 之後真正的混淆風險，不是「寫了技術」，而是「把某天發生的事寫成 T1」。'
+  '那不是事實、也不是規則，是經歷，屬於 T3。')
+code('/(?:\\d{4}[-/年]\\d{1,2}|\\d{1,2}\\s*月\\s*\\d{1,2}\\s*[日號]|昨天|今天|前天)/')
+P('理由：事實是「一直是這樣」，規則是「以後每次都這樣」—— 兩者都不需要一個日子。'
+  '帶日子的，是「那一天發生了 X」。')
+P('驗證：現有帳本裡 15 條 T1 逐條跑過這道閘，0 條誤殺。')
+
+doc.add_heading('18.3　T3 明確禁收專案細節', level=2)
+P('帳本證據：七天 95 條 memory.write，T1 = 15、T3 = 76、T4 = 2、T5 = 2。'
+  'T4 只活 24 小時，等於寫了也沒用 —— 所以模型實際只剩 T1 / T3 兩個選擇，'
+  '「不確定」的全堆進 T3。')
+P('寫進提示詞的判準是一句反問：**過一個月之後，你還會想知道「哪個檔案」嗎？** 不會，那就不是 T3。')
+P('注意不能一刀切「T3 不准寫技術」：帳本裡有「我用了後台轉，他沒聽懂 —— 技術詞不該先於解釋」，'
+  '那條**該留**，它是溝通教訓，不是專案細節。要禁的是檔案、命令、debug 過程。')
+
+doc.add_heading('18.4　修好「反思在峰時還在燒 token」', level=2)
+P('本人第二次提同一件事。總開關那一半早就對了：arm() 第一行就擋，force 也越不過。'
+  '但谷時那一半真的漏了 —— 谷時檢查被寫在 if (!force) 裡面。')
+code('// 修復前\nif (!force) {\n  if (store.cfg.valleyOnly && !v.ok) return ...\n  if (dutiesToday(now) >= dutyMaxPerDay) return ...\n}\n'
+     '// 修復後：谷時移到 !force 外面\n')
+P('於是 force:true（頁面按鈕、手動觸發）在尖峰時段照樣起一輪。用 git stash 對照驗證過：'
+  '修復前峰時 arm({force:true}) 返回 ok:true 並建了排程，修復後返回 ok:false、一條都沒建。')
+P('判斷原則：谷時是本人訂的「什麼時候可以燒 token」，不是排程的便利條件。'
+  'force 的語義是「現在就要，不等到期」，不包括「連本人訂的谷時都不管」。'
+  '每日上限則仍歸 force 管。')
+
+doc.add_heading('18.5　新增測試：test/duty-gates.mjs', level=2)
+P('八條斷言，釘住那些「沒有測試就很容易被下一次改動挪走」的閘：')
+code('A1-A3  總開關關著：arm() / force:true / 顯式 kinds 三條路都攔\n'
+     'A4     總開關關著：tick() 什麼都不起\n'
+     'B1-B2  峰時：force 也攔得住\n'
+     'B2b    inValley 的窗口判斷（中午谷時 / 下午峰時各一個點）\n'
+     'B3     全新 Store 的 valleyOnly 默認值是 true')
+P('B1 / B2 靠真實時鐘（arm() 內部用的是 inValley(Date.now())，假 store 騙不到它）。'
+  '不是峰時就**明說「跳過」**，而不是靜悄悄 pass —— 靜悄悄 pass 等於這道閘從沒被釘住過。')
 
 doc.save(OUT)
 print('saved:', OUT)
