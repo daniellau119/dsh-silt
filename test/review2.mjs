@@ -188,9 +188,10 @@ console.log('\n⑨ pendingSay 的時區：at 是東八區，atUtc 才是 UTC')
   ok(typeof p.atUtc === 'string', '有 atUtc')
   ok(/-?\+?08:?00| \+08/.test(p.at) || p.at.includes(' '), `at 已經不是 ISO 的裸 UTC（${p.at}）`)
   ok(/Z$/.test(p.atUtc), `atUtc 是純 UTC ISO（${p.atUtc}）`)
-  // 兩個時間差八小時 —— 這就是「拿 at 比 now 會差八小時」的證據
-  const gapHours = (Date.parse(p.atUtc) - Date.parse(p.at.replace(' ', 'T') + '+08:00')) / 3600000
-  ok(Math.abs(gapHours) < 0.01, `at 和 atUtc 指的是同一時刻（差 ${gapHours.toFixed(2)} 小時）—— 但拿 at 直接比 now 就會差八小時`)
+  // 兩個時間指的是同一刻 —— 這就是「拿 at 比 now 會差八小時」的證據。
+  // ⚠️ at 的精度是**秒**（toLocal 截到秒），atUtc 有毫秒，所以差值上限是 59 秒，不是 0。
+  const gapSec = Math.abs(Date.parse(p.atUtc) - Date.parse(p.at.replace(' ', 'T') + '+08:00')) / 1000
+  ok(gapSec < 60, `at 和 atUtc 指的是同一時刻（差 ${gapSec.toFixed(0)} 秒，秒級精度）—— 但拿 at 直接比 now 就會差八小時`)
 }
 
 console.log('\n⑩ silt_speak 的 op 字串乾淨（沒有前導/尾隨空格）')

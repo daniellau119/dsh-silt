@@ -39,8 +39,15 @@ console.log('\n3) 漏洞 3：tags 與 quote 也要掃')
   const sess = { sessionId: 's', callId: 'c' }
   const a = normalizeMemory({ ...base, tags: ['npm install 失败'] }, sess)
   ok(!a.ok, 'tags 裡的命令被擋')
+  // ⚠️ 2026-11-25 改：**quote 不再過技術閘，只過憑據閘**（本人指出的第 11 條）。
+  //    quote 是證據（他親口說的逐字原話），不是記憶內容。使用者說
+  //    「我改 config.json 改到三點」是一件關於他的、值得記的事 ——
+  //    不該因為他提到了一個檔名就整條消失。
+  //    （本條原本斷言「quote 裡的代碼被擋」，那是舊行為。）
   const b = normalizeMemory({ ...base, quote: '他說 `pnpm build` 很慢' }, sess)
-  ok(!b.ok, 'quote 裡的代碼被擋')
+  ok(b.ok, 'quote 裡的代碼**不再**被擋（quote 是證據，只過憑據閘）')
+  const b2 = normalizeMemory({ ...base, quote: '我的卡號是 4111111111111111' }, sess)
+  ok(!b2.ok, 'quote 裡的憑據仍然被擋')
   const c = normalizeMemory({ ...base, tags: ['香港', '工作'] }, sess)
   ok(c.ok, '正常 tags 可以寫')
 }
