@@ -45,7 +45,7 @@ The whole design comes down to four sentences:
 
 | | What it is | Limit | Base half-life | In prompt |
 |:--:|---|:--:|:--:|:--:|
-| **T1** | Facts and rules: facts that stay true, and rules to follow every time | 400 | 100 yr | ✅ |
+| **T1** | Facts and rules: facts that stay true, and rules to follow every time | 200 | 100 yr | ✅ |
 | **T2** | Gists settled out of experience | 200 | 720 d | ✅ |
 | **T3** | Experiences worth keeping (**no project details**) | 1000 | 180 d | ✅ |
 | **T4** | Scratch: undecided, parked for now | 300 | 8 h (lives 24 h) | ❌ |
@@ -53,7 +53,9 @@ The whole design comes down to four sentences:
 
 > **Why T1 takes rules**: something the owner repeats has nowhere else to go but T3 —
 > and T3 is *experiences*, so a rule filed there reads as a past event and gets ignored next time.
-> A rule has to say "when this happens ⇒ do this ⇒ because of that", which is 200+ chars, hence 400.
+> A rule has to say "when this happens ⇒ do this ⇒ because of that", but the **limit stays 200 chars** —
+> the answer is to tighten the wording, not to widen the bowl.
+> Dates are fine to write: a date is *when this happened*, and that is part of the memory.
 >
 > **Why T3 refuses project details**: which file changed, what got installed, how deep the debug went —
 > the code already records that. Spending a T3 slot on it only crowds out actual people and events.

@@ -20,41 +20,60 @@ ok(TIERS[4].label === '雜項', `T4 標籤 = 雜項（實際 ${TIERS[4].label}�
 ok(TIERS[5].halfLifeDays === 30, 'T5 保持 30')
 ok(TIERS[1].halfLifeDays === 36500, 'T1 保持 36500')
 
-// 2026-11-25 本人把 T1 從「事實」擴成「事實與規則」，上限 200 → 400。
-// 這條釘住兩件事：數字是 400，而且標籤不是「簡短事實」（舊語義會讓人以為規則不該進 T1）。
-ok(TIERS[1].maxChars === 400, `T1 上限 = 400 字（實際 ${TIERS[1].maxChars}）`)
+// 2026-11-25 本人把 T1 的**語義**從「事實」擴成「事實與規則」，但**上限保持 200**。
+// 我一度把它改成 400，本人不同意，拉回來。這兩條斷言就是釘住那個決定：
+//   - 數字是 200（不是我推論出來的 400）
+//   - 標籤是「事實與規則」（語義確實擴了，規則可以進 T1）
+ok(TIERS[1].maxChars === 200, `T1 上限 = 200 字（實際 ${TIERS[1].maxChars}）—— 本人定的，不是推論出來的`)
 ok(TIERS[1].label === '事實與規則', `T1 標籤 = 事實與規則（實際 ${TIERS[1].label}）`)
-console.log('\n1b) T1 收規則、但不收「某天發生的事」')
+console.log('\n1b) T1 收規則；日期可以寫；超過 200 字退回')
 {
   const s = new Store(process.env.DSH_SILT_HOME).load()
   s.cfg = { ...s.cfg, enabled: true }
   const base = { sessionId: 'sess-1', callId: 'call-1' }
+  // 規則要寫進 200 字以內 —— 寫法是精簡，不是把碗變大。
   const rule = s.writeMemory(
     {
       tier: 1,
       title: '他問「要不要我」時，先給判斷再問',
-      body: '他問「要不要我去做」的時候，先說我判斷該不該做、為什麼，再問他同不同意。因為他問這句常常是在給退路，不是要我請示；直接問回去等於把決定推回給他。',
+      body: '他說「要不要我去做」時，先講我判斷該不該做、為什麼，再問他同不同意。他問這句多半是給退路，不是要我請示。',
       domain: 'person',
       dims: ['personality'],
     },
     base,
   )
-  ok(rule.ok === true, '規則可以寫進 T1（400 字以內）')
+  ok(rule.ok === true, '規則可以寫進 T1（200 字以內）')
+
+  // ⭐ 本人原話：「日期是記錄這條是甚麼時侯發生的」—— 所以日期照寫，不准被擋。
   const dated = s.writeMemory(
-    { tier: 1, title: '2026-11-25 他說要換機器', body: '他說要換機器，我量了一下覺得不用換。', domain: 'world', dims: ['background'] },
+    {
+      tier: 1,
+      title: '2026-11-25 起，他改用語音輸入',
+      body: '他說 2026-11-25 開始都改用語音輸入，所以我也應該回語音。',
+      domain: 'world',
+      dims: ['background'],
+    },
     base,
   )
-  ok(dated.ok === false, '帶日期的標題被擋（那是經歷，不是事實/規則）')
-  const rule400 = s.writeMemory(
-    { tier: 1, title: '規則字數驗證', body: 'x'.repeat(380), domain: 'person', dims: ['personality'] },
+  ok(dated.ok === true, '帶日期的 T1 照樣可以寫（日期是這條甚麼時候發生的）')
+
+  // 舊閘：T1 只收 person / world。規則常落在 work / feeling / other，不該被擋。
+  const workRule = s.writeMemory(
+    { tier: 1, title: '報價前先問清楚範圍', body: '接到報價前先問清楚範圍，不要先給數字。', domain: 'work', dims: ['personality'] },
     base,
   )
-  ok(rule400.ok === true, '400 字附近仍然可以寫進去')
+  ok(workRule.ok === true, '規則落在 work 這種 domain 也收（舊閘會擋掉）')
+
+  const at200 = s.writeMemory(
+    { tier: 1, title: '字數驗證', body: 'x'.repeat(190), domain: 'person', dims: ['personality'] },
+    base,
+  )
+  ok(at200.ok === true, '200 字以內可以寫進去')
   const over = s.writeMemory(
-    { tier: 1, title: '規則字數驗證二', body: 'x'.repeat(420), domain: 'person', dims: ['personality'] },
+    { tier: 1, title: '字數驗證二', body: 'x'.repeat(220), domain: 'person', dims: ['personality'] },
     base,
   )
-  ok(over.ok === false, '超過 400 字被退回')
+  ok(over.ok === false, '超過 200 字被退回')
 }
 
 console.log('\n2) T2/T3 比例 = 4 倍')
