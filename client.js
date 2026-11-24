@@ -133,7 +133,7 @@ window.__ModuleLoader__.load({
         n_inject: 'Memories injected',
         n_slots: 'Slots (derived from the budget):',
         n_budget: 'Injection budget (chars)',
-        n_ttl: 'Short-term kept (days)',
+        n_ttl: 'Misc／T4 kept (hours)',
         valley_now: 'In a valley window',
         valley_no: 'Peak hours',
         last_reflect: 'Last reflection',
@@ -353,7 +353,7 @@ window.__ModuleLoader__.load({
         n_inject: '注入記憶條數',
         n_slots: '注入位置（由預算推導）：',
         n_budget: '注入字數預算',
-        n_ttl: '短期記憶保留（天）',
+        n_ttl: '雜項（T4）保留（小時）',
         valley_now: '正在谷時',
         valley_no: '尖峰時段',
         last_reflect: '上次反省',
@@ -1187,7 +1187,8 @@ window.__ModuleLoader__.load({
       // 底座的輸入框平常鎖著：先按「寫入底座」才解鎖，改完按「保存」或「取消」再鎖回去
       const [foundationEditing, setFoundationEditing] = useState(false)
       const [openMem, setOpenMem] = useState({})
-      const [memExpandAll, setMemExpandAll] = useState(false)
+      const [memTier, setMemTier] = useState(null)
+      const [memPage, setMemPage] = useState(0)
       const [biliS, setBiliS] = useState(null)
       const [qr, setQr] = useState(null)
       const [loginMsg, setLoginMsg] = useState('')
@@ -1333,6 +1334,28 @@ window.__ModuleLoader__.load({
         })
       // 注入了卻已經沒人在等結果的預測 —— 提醒本人去看一眼
       const dueForecasts = memories.filter((m) => m.tier === 5 && m.due && !m.voided)
+
+      /* ── 記憶卡片的 T 分頁 ── */
+      // 每頁固定 10 行；排序按插入時間，**最新在最上面**。
+      // （b.bornAt 是寫入那一刻；沒有的話退回 firstSeen。）
+      const MEM_PAGE_SIZE = 10
+      const stampOf = (m) => Date.parse(m.bornAt || m.firstSeen || '') || 0
+      const byNewest = (a, b) => stampOf(b) - stampOf(a)
+      // T4（雜項）不在 state.memories 裡，它在 state.scratch；T2 是沉澱出來的概，
+      // 目前沒有這層的資料，選了就是空。
+      const tierRows = (tier) => {
+        if (tier === 4) return (state?.scratch || []).slice().sort(byNewest)
+        return memories.filter((m) => m.tier === tier).sort(byNewest)
+      }
+      const TIER_TABS = [1, 2, 3, 4, 5]
+      const tabCount = (tier) => (tier === 4 ? (state?.scratch || []).length : memories.filter((m) => m.tier === tier).length)
+      // 沒選就停在「最多的那一層」——不然一進來是空的
+      const activeTier = memTier ?? (TIER_TABS.slice().sort((a, b) => tabCount(b) - tabCount(a))[0] || 3)
+      const tierList = tierRows(activeTier)
+      const pageCount = Math.max(1, Math.ceil(tierList.length / MEM_PAGE_SIZE))
+      const page = Math.min(memPage, pageCount - 1)
+      const pageRows = tierList.slice(page * MEM_PAGE_SIZE, page * MEM_PAGE_SIZE + MEM_PAGE_SIZE)
+
       const dirtyFoundation = foundationDraft != null && state && foundationDraft !== (state.foundation?.text || '')
 
       const tierLabel = (tier) =>
@@ -1530,6 +1553,34 @@ window.__ModuleLoader__.load({
         }
       }
 
+      // 形象照：先探一下有沒有（沒有就不畫那個框）
+      const [portraitOk, setPortraitOk] = useState(null)
+      const portraitV = state?.runtime?.portraitAt || '1'
+      useEffect(() => {
+        let alive = true
+        fetch(`${API}/portrait`, { method: 'HEAD', credentials: 'same-origin' })
+          .then((r) => alive && setPortraitOk(r.ok))
+          .catch(() => alive && setPortraitOk(false))
+        return () => {
+          alive = false
+        }
+      }, [portraitV])
+
+      // 2026-11-22：形象照不再塞在標題那行（太小），改成跟性格卡一左一右擺在星圖上方。
+      // 沒有 portrait.jpg 就整塊不出現 —— 不留一個空框。
+      const portraitSection =
+        portraitOk === true
+          ? h(
+              'div',
+              { className: 'mn-portrait-card', style: { borderRadius: 14, overflow: 'hidden', border: `1px solid ${C.border1}`, background: C.base } },
+              h('img', {
+                src: `${API}/portrait?t=${portraitV}`,
+                alt: t('title'),
+                style: { display: 'block', width: '100%', height: '100%', minHeight: 360, objectFit: 'cover', objectPosition: '50% 20%' },
+              }),
+            )
+          : null
+
       const header = h(
         'header',
         { className: 'mn-head', style: { display: 'flex', alignItems: 'flex-start', gap: 14, padding: '18px 24px 14px', borderBottom: `1px solid ${C.border1}`, background: C.base } },
@@ -1592,14 +1643,101 @@ window.__ModuleLoader__.load({
         ),
       )
 
-      const LIST_CAP = 16
+      /* ── 提示詞分層：這一輪送進模型的那段字，各塊佔多少 ── */
+      // 資料由 /state 的 injection 帶過來（那是量出來的真實長度，不是估的）。
+      const PALETTE = {
+        foundation: '#5b7cfa',
+        persona_title: '#8a6fe8',
+        identity: '#8a6fe8',
+        voice: '#9d84ee',
+        self: '#b39df3',
+        bond: '#c7b6f7',
+        digest_title: '#3fa78a',
+        memory: '#e0a33e',
+        hidden_note: '#c9645a',
+      }
+      const colorOf = (key) => {
+        if (key === 'foundation') return PALETTE.foundation
+        if (key === 'persona_title') return PALETTE.persona_title
+        if (key === 'identity') return PALETTE.identity
+        if (key === 'voice') return PALETTE.voice
+        if (key === 'self') return PALETTE.self
+        if (key.startsWith('bond')) return PALETTE.bond
+        if (key === 'digest_title') return PALETTE.digest_title
+        if (key === 'memory') return PALETTE.memory
+        if (key === 'hidden_note') return PALETTE.hidden_note
+        return '#999'
+      }
+      const inj = state?.injection
+      const injSection = h(
+        Section,
+        {
+          title: '提示詞分層',
+          hint: inj && !inj.error
+            ? `${inj.used} / ${inj.budget} 字 · 記住 ${inj.shown} 條${inj.hidden ? `（沒顯示 ${inj.hidden} 條）` : ''}`
+            : '這一輪的字數分佈',
+        },
+        inj?.error
+          ? h('div', { className: 'mn-empty' }, `量不出來：${inj.error}`)
+          : !inj
+            ? h('div', { className: 'mn-hint' }, '等下一次讀取…')
+            : h(
+                'div',
+                { style: { padding: '4px 0 2px' } },
+                // 堆疊條：總長 = 預算，每塊按字數佔位；超出預算的那截用斜線標出來。
+                h(
+                  'div',
+                  {
+                    style: {
+                      display: 'flex', height: 18, borderRadius: 4, overflow: 'hidden',
+                      background: 'var(--dsw-alias-bg-secondary, rgba(127,127,127,0.12))',
+                      border: '1px solid var(--dsw-alias-line-primary, rgba(127,127,127,0.25))',
+                    },
+                  },
+                  ...(() => {
+                    const budget = Math.max(1, inj.budget || 1)
+                    const parts = (inj.parts || []).filter((p) => !p.key.endsWith('_line') && p.chars > 0)
+                    return parts.map((p, i) =>
+                      h('div', {
+                        key: `${p.key}-${i}`,
+                        title: `${p.title} ${p.chars} 字`,
+                        style: {
+                          width: `${(p.chars / budget) * 100}%`,
+                          background: colorOf(p.key),
+                          opacity: p.key === 'hidden_note' ? 0.85 : 1,
+                        },
+                      }),
+                    )
+                  })(),
+                ),
+                // 圖例 + 數字表
+                h(
+                  'div',
+                  { style: { marginTop: 8, display: 'flex', flexDirection: 'column', gap: 3 } },
+                  ...((inj.parts || []).filter((p) => !p.key.endsWith('_line') && p.chars > 0).map((p, i) =>
+                    h(
+                      'div',
+                      { key: `${p.key}-row-${i}`, style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 } },
+                      h('i', { style: { width: 10, height: 10, borderRadius: 2, background: colorOf(p.key), display: 'inline-block', flex: '0 0 auto' } }),
+                      h('span', { style: { flex: 1, opacity: 0.8 } }, p.title),
+                      h('span', { style: { fontVariantNumeric: 'tabular-nums', opacity: 0.65 } }, `${p.chars}`),
+                      h('span', { style: { fontVariantNumeric: 'tabular-nums', width: 44, textAlign: 'right', opacity: 0.5 } },
+                        `${((p.chars / Math.max(1, inj.budget || 1)) * 100).toFixed(1)}%`),
+                    ),
+                  )),
+                ),
+                h('div', { className: 'mn-hint', style: { marginTop: 6, opacity: 0.6 } },
+                  `空著 ${inj.free ?? 0} 字 —— 這段是量出來的真實長度，不是估的`),
+              ),
+      )
+
       const digestSection = h(
         Section,
         {
           title: t('memory_digest'),
           hint:
             `T1 ${state.counts?.byTier?.[1] || 0} · T2 ${state.counts?.byTier?.[2] || 0} · T3 ${state.counts?.byTier?.[3] || 0} · ` +
-            `T5 ${state.counts?.byTier?.[5] || 0} · 暫存 ${state.counts?.scratch || 0}`,
+            `T5 ${state.counts?.byTier?.[5] || 0} · 雜項 ${state.counts?.scratch || 0}`,
         },
         // 已過期的預測：提示詞裡還掛著，等本人給個結果
         dueForecasts.length
@@ -1614,9 +1752,36 @@ window.__ModuleLoader__.load({
               `⏰ ${t('due_hint', { n: dueForecasts.length })}`,
             )
           : null,
-        memories.length === 0
-          ? h('div', { className: 'mn-empty' }, t('empty_memory'))
-          : memories.slice(0, memExpandAll ? memories.length : LIST_CAP).map((m) => {
+        // ── T 分頁：左上方一排，點哪層看哪層 ──
+        h(
+          'div',
+          { style: { display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 } },
+          ...TIER_TABS.map((tier) =>
+            h(
+              'button',
+              {
+                key: tier,
+                type: 'button',
+                className: 'mn-btn',
+                onClick: () => { setMemTier(tier); setMemPage(0) },
+                style: {
+                  ...btnStyle,
+                  padding: '2px 9px',
+                  fontSize: 12,
+                  opacity: tier === activeTier ? 1 : 0.55,
+                  background: tier === activeTier ? 'var(--dsw-alias-bg-secondary, rgba(127,127,127,0.18))' : 'transparent',
+                  borderWidth: 1,
+                  borderStyle: 'solid',
+                  borderColor: tier === activeTier ? 'var(--dsw-alias-line-primary, rgba(127,127,127,0.5))' : 'transparent',
+                },
+              },
+              `T${tier} ${tabCount(tier)}`,
+            ),
+          ),
+        ),
+        pageRows.length === 0
+          ? h('div', { className: 'mn-empty' }, activeTier === 4 ? '雜項區是空的（這裡放歸不了類的先擱著的東西，24 小時沒人想起就散了）' : t('empty_memory'))
+          : pageRows.map((m) => {
               const open = Boolean(openMem[m.id])
               const bvid = (m.evidence || []).find?.((e) => e.bvid)?.bvid || ''
               // 作廢的整行灰掉：內容還在、查得到，但它是錯的
@@ -1688,16 +1853,48 @@ window.__ModuleLoader__.load({
                 ),
               )
             }),
-        // 超過一屏就給一個「看全部」，不然後面幾條永遠看不到
-        memories.length > LIST_CAP
+        // ── 選頁：每頁 10 行，最新的在最上面 ──
+        pageCount > 1
           ? h(
               'div',
-              { style: { marginTop: 8, textAlign: 'center' } },
+              { style: { marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' } },
               h(
                 'button',
-                { type: 'button', className: 'mn-btn', style: btnStyle, onClick: () => setMemExpandAll((v) => !v) },
-                memExpandAll ? t('show_less') : t('show_more', { n: memories.length }),
+                { type: 'button', className: 'mn-btn', style: { ...btnStyle, padding: '2px 9px' }, disabled: page === 0, onClick: () => setMemPage(Math.max(0, page - 1)) },
+                '‹',
               ),
+              ...(() => {
+                // 頁碼最多擺 9 個：太長就用「…」省略中間，不然 20 頁的橫排會爆掉。
+                const total = pageCount
+                const out = []
+                const push = (n) => out.push(h(
+                  'button',
+                  {
+                    key: `p${n}`,
+                    type: 'button',
+                    className: 'mn-btn',
+                    style: { ...btnStyle, padding: '2px 8px', fontSize: 12, opacity: n === page ? 1 : 0.55,
+                      background: n === page ? 'var(--dsw-alias-bg-secondary, rgba(127,127,127,0.18))' : 'transparent' },
+                    onClick: () => setMemPage(n),
+                  },
+                  String(n + 1),
+                ))
+                const win = 9
+                if (total <= win) {
+                  for (let i = 0; i < total; i += 1) push(i)
+                } else {
+                  const from = Math.max(0, Math.min(total - win, page - Math.floor(win / 2)))
+                  for (let i = from; i < from + win; i += 1) push(i)
+                }
+                return out
+              })(),
+              h(
+                'button',
+                { type: 'button', className: 'mn-btn', style: { ...btnStyle, padding: '2px 9px' }, disabled: page >= pageCount - 1, onClick: () => setMemPage(Math.min(pageCount - 1, page + 1)) },
+                '›',
+              ),
+              h('span', { className: 'mn-hint', style: { marginLeft: 4, opacity: 0.6 } },
+                `${tierList.length} 條 · 第 ${page + 1}/${pageCount} 頁`),
             )
           : null,
       )
@@ -1953,7 +2150,7 @@ window.__ModuleLoader__.load({
           // 條數不再手動調：它由 injectBudget 推導（每 50 字一個位置），所以這裡只顯示推導結果。
           h('div', { className: 'mn-hint' }, `${t('n_slots')} ${state.derivedSlots ?? Math.floor((cfg.injectBudget || 0) / 50)}`),
           h(Num, { label: t('n_budget'), value: cfg.injectBudget, min: 600, max: 3200, onCommit: (v) => void post('/config', { patch: { injectBudget: v } }) }),
-          h(Num, { label: t('n_ttl'), value: cfg.tier4TtlDays, min: 0, max: 90, onCommit: (v) => void post('/config', { patch: { tier4TtlDays: v } }) }),
+          h(Num, { label: t('n_ttl'), value: cfg.tier4TtlHours ?? 24, min: 0, max: 240, onCommit: (v) => void post('/config', { patch: { tier4TtlHours: v } }) }),
         ),
         h(
           'div',
@@ -2131,10 +2328,25 @@ window.__ModuleLoader__.load({
           { className: 'mn-body', style: bodyStyle },
           error ? h('div', { className: 'mn-err', style: { color: C.err } }, `${t('error')}: ${error}`) : null,
           note ? h('div', { className: 'mn-note', style: { fontSize: 12, color: C.dim } }, note) : null,
+          // 形象照（左）＋ 性格卡（右）—— 2026-11-22 他要置頂，擺在星圖之前
+          portraitSection || personaSection
+            ? h(
+                'div',
+                {
+                  className: 'mn-portrait-row',
+                  style: portraitSection
+                    ? { display: 'grid', gridTemplateColumns: 'minmax(280px, 420px) 1fr', gap: 16, alignItems: 'stretch', marginBottom: 16 }
+                    : { marginBottom: 16 },
+                },
+                portraitSection,
+                personaSection,
+              )
+            : null,
           mapSection,
+          injSection,
           digestSection,
           selfSection,
-          h('div', { className: 'mn-grid2' }, personaSection, dimsSection),
+          h('div', { className: 'mn-grid2' }, dimsSection),
           rhythmSection,
           accountSection,
           safetySection,

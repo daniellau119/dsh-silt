@@ -154,6 +154,28 @@ export function apply(ctx, config) {
     log(`HTTP 路由掛不上：${err?.message || err}`)
   }
 
+  /* ── 「本人最後親手說話的會話」 ──
+   * 日記和反思寫在這裡，不另開一個房間自言自語。
+   *
+   * 只有 `api-session/activity` 算數：它在 session-controller 裡的判據是
+   *   event.type === 'user/message' && event.data.source.kind === 'user'
+   * 排程投遞、agent 自己寫的、工具結果全被排除 —— 只有本人敲的那句話推進這個會話。
+   *
+   * 不掛在 `session/event` 上是刻意的：那條是所有事件，得自己再篩一遍，
+   * 篩錯了就會把自己發出去的東西當成他說的。
+   */
+  try {
+    ctx.effect(
+      () =>
+        ctx.on('api-session/activity', (sessionId, updatedAt) => {
+          store.noteHomeSession(sessionId, updatedAt)
+        }),
+      'silt: home session',
+    )
+  } catch (err) {
+    log(`「本人最後說話的會話」掛不上：${err?.message || err}`)
+  }
+
   /* ── 谷時值守心跳 ──
    * 60 分鐘一拍（原本 120 秒）。
    *

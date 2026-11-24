@@ -14,26 +14,70 @@ const ok = (c, l) => (c ? (pass++, console.log(`  ok   ${l}`)) : (fail++, consol
 console.log('1) 新的基準半衰期')
 ok(TIERS[2].halfLifeDays === 720, `T2 = 720（實際 ${TIERS[2].halfLifeDays}）`)
 ok(TIERS[3].halfLifeDays === 180, `T3 = 180（實際 ${TIERS[3].halfLifeDays}）`)
-ok(TIERS[4].halfLifeDays === 7, `T4 = 7（實際 ${TIERS[4].halfLifeDays}）`)
+// 2026-11-20：T4 改成「雜項」，半衰期 8 小時
+ok(Math.abs(TIERS[4].halfLifeDays - 8 / 24) < 1e-9, `T4 = 8 小時（實際 ${(TIERS[4].halfLifeDays * 24).toFixed(2)} 小時）`)
+ok(TIERS[4].label === '雜項', `T4 標籤 = 雜項（實際 ${TIERS[4].label}）`)
 ok(TIERS[5].halfLifeDays === 30, 'T5 保持 30')
 ok(TIERS[1].halfLifeDays === 36500, 'T1 保持 36500')
+
+// 2026-11-25 本人把 T1 從「事實」擴成「事實與規則」，上限 200 → 400。
+// 這條釘住兩件事：數字是 400，而且標籤不是「簡短事實」（舊語義會讓人以為規則不該進 T1）。
+ok(TIERS[1].maxChars === 400, `T1 上限 = 400 字（實際 ${TIERS[1].maxChars}）`)
+ok(TIERS[1].label === '事實與規則', `T1 標籤 = 事實與規則（實際 ${TIERS[1].label}）`)
+console.log('\n1b) T1 收規則、但不收「某天發生的事」')
+{
+  const s = new Store(process.env.DSH_SILT_HOME).load()
+  s.cfg = { ...s.cfg, enabled: true }
+  const base = { sessionId: 'sess-1', callId: 'call-1' }
+  const rule = s.writeMemory(
+    {
+      tier: 1,
+      title: '他問「要不要我」時，先給判斷再問',
+      body: '他問「要不要我去做」的時候，先說我判斷該不該做、為什麼，再問他同不同意。因為他問這句常常是在給退路，不是要我請示；直接問回去等於把決定推回給他。',
+      domain: 'person',
+      dims: ['personality'],
+    },
+    base,
+  )
+  ok(rule.ok === true, '規則可以寫進 T1（400 字以內）')
+  const dated = s.writeMemory(
+    { tier: 1, title: '2026-11-25 他說要換機器', body: '他說要換機器，我量了一下覺得不用換。', domain: 'world', dims: ['background'] },
+    base,
+  )
+  ok(dated.ok === false, '帶日期的標題被擋（那是經歷，不是事實/規則）')
+  const rule400 = s.writeMemory(
+    { tier: 1, title: '規則字數驗證', body: 'x'.repeat(380), domain: 'person', dims: ['personality'] },
+    base,
+  )
+  ok(rule400.ok === true, '400 字附近仍然可以寫進去')
+  const over = s.writeMemory(
+    { tier: 1, title: '規則字數驗證二', body: 'x'.repeat(420), domain: 'person', dims: ['personality'] },
+    base,
+  )
+  ok(over.ok === false, '超過 400 字被退回')
+}
 
 console.log('\n2) T2/T3 比例 = 4 倍')
 ok(720 / 180 === 4, '720 / 180 = 4')
 
-console.log('\n3) T4 半衰期終於起作用（TTL 30 > 半衰期 7）')
+console.log('\n3) T4 半衰期 8 小時，TTL 24 小時（清掉之前早就暗了）')
 {
-  const mem = (age) => ({ id: 'x', tier: 4, importance: 0.4, bornAt: new Date(Date.now() - age * 86400000).toISOString() })
-  for (const d of [0, 7, 14, 28]) {
-    console.log(`       age ${String(d).padStart(2)} 天 -> salience ${(salienceOf(mem(d), {} ) / 0.4 * 100).toFixed(1)}%`)
+  const H = 3600000
+  const mem = (ageHours) => ({ id: 'x', tier: 4, importance: 0.4, bornAt: new Date(Date.now() - ageHours * H).toISOString() })
+  for (const h of [0, 8, 12, 24]) {
+    console.log(`       age ${String(h).padStart(2)} 小時 -> salience ${(salienceOf(mem(h), {}) / 0.4 * 100).toFixed(1)}%`)
   }
-  const s7 = salienceOf(mem(7), {})
-  ok(Math.abs(s7 / 0.4 - 0.5) < 0.01, '7 天正好掉一半')
-  // TTL 30 天內還活著，31 天淘汰
+  ok(Math.abs(salienceOf(mem(8), {}) / 0.4 - 0.5) < 0.01, '8 小時正好掉一半')
+  const at24 = salienceOf(mem(24), {}) / 0.4
+  ok(Math.abs(at24 - 0.125) < 0.01, `24 小時只剩 12.5%（實際 ${(at24 * 100).toFixed(1)}%）`)
   const s = new Store(process.env.DSH_SILT_HOME).load()
-  s.cfg = { ...s.cfg, tier4TtlDays: 30 }
-  ok(!isExpired(mem(29), {}, s.cfg), '29 天還活著')
-  ok(isExpired(mem(31), {}, s.cfg), '31 天淘汰')
+  ok(s.cfg.tier4TtlHours === 24, `預設 TTL = 24 小時（實際 ${s.cfg.tier4TtlHours}）`)
+  s.cfg = { ...s.cfg, tier4TtlHours: 24 }
+  ok(!isExpired(mem(23), {}, s.cfg), '23 小時還活著')
+  ok(isExpired(mem(25), {}, s.cfg), '25 小時淘汰')
+  // 舊欄位名（天）仍然認：只有 tier4TtlDays: 1 應該換算成 24 小時
+  ok(isExpired(mem(25), {}, { tier4TtlDays: 1 }), '舊欄位 tier4TtlDays:1 也按 24 小時算')
+  ok(!isExpired(mem(30), {}, { tier4TtlHours: 48 }), 'tier4TtlHours 蓋過舊欄位')
 }
 
 console.log('\n4) T3 在 180 天時亮度剛好一半（壓縮 175 天落 T2）')
