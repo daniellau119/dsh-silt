@@ -127,7 +127,7 @@ def table(headers, rows, widths=None):
 P('dsh-silt', bold=True, size=26, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=2)
 P('跨會話記憶與人格插件', bold=True, size=15, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=18)
 P('技術文檔', size=12, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=30)
-P('版本 v1.9.0 · 2026-11-25', size=10, align=WD_ALIGN_PARAGRAPH.CENTER)
+P('版本 v1.10.0 · 2026-11-25', size=10, align=WD_ALIGN_PARAGRAPH.CENTER)
 P('基於 silt 插件目前的實際程式碼', size=9, italic=True, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=40)
 
 P('本文檔描述插件目前真實的運作方式：資料怎麼存、記憶怎麼分層、什麼時候被壓縮、'
@@ -157,6 +157,7 @@ toc = [
     '16　常數速查',
     '17　心跳與主動開口',
     '18　T1 擴成「事實與規則」，T3 禁收專案細節',
+    '19　B站 拆出、形象照位置、與幾條規則的收緊',
 ]
 for t in toc:
     P(t, size=10.5, space_after=2)
@@ -517,7 +518,7 @@ P('這條「掃的時候給 0」是必要的：不然光是把 T4 掃一遍，�
   '碎屑會被掃描這個動作本身催熟。')
 
 doc.add_heading('8.6　過期', level=2)
-P('沒升上去的 T4 過 tier4TtlDays（預設 30 天）自動消失。'
+P('沒升上去的 T4 過 tier4TtlHours（預設 48 小時，可調 24–168）自動消失；這一層沒有獨立的半衰期，跟著 TTL 走。'
   '留下的理由只有一個：置信度真的加夠了。')
 P('⚠️ TTL 30 天配半衰期 7 天：條目會先慢慢變暗（30 天時亮度剩 5%），淡到看不見了才被清掉。'
   '早先 TTL 和半衰期都是 3 天 —— 那等於半衰期永遠來不及起作用，條目還沒變暗就先被刪了。', size=9.5)
@@ -789,7 +790,8 @@ table(
         ['injectCount', '12', '1–64', '⚠️ 已不生效：條數由 injectBudget / 50 推導'],
         ['reflectionEveryHours', '24', '6–72', '多久反思一次'],
                 ['dutyMaxPerDay', '2', '1–4', '每天最多幾輪'],
-        ['tier4TtlDays', '30', '0–90', 'T4 保留天數（0 = 不過期）'],
+        ['tier4TtlHours', '48', '24–168', 'T4 存活小時（0 = 不過期，特例）'],
+    ['reflectionAt', 'null', 'HH:MM 陣列', '固定鐘點（東八區）；設了 reflectionEveryHours 不生效'],
     ],
     widths=[4.4, 1.6, 2.2, 8.3],
 )
@@ -992,6 +994,97 @@ P('⚠️ 用 bornAt 算，不是 firstSeen：T4 的 firstSeen 截到小時（�
 P('⚠️ 這一節也記一筆我犯的錯：我一度把可調範圍寫成 0–2160（90 天），'
   '理由是「舊的 240 小時太窄」。本人拉回 24–168。'
   '**範圍是本人訂的，不是我從「尺度合理性」推出來的。**')
+
+doc.add_heading('19　B站 拆出、形象照位置、與幾條規則的收緊', level=1)
+P('2026-11-25 另一批改動。前面幾章講的是「怎麼記」，這一章講的是「誰負責什麼」與「哪些閘補上了」。')
+
+doc.add_heading('19.1　刷B站整條移出 silt', level=2)
+P('原本 silt 管兩件事：記憶與自我、**以及要不要去刷B站**。後者有自己的開關、節律、'
+  '白名單（perDay / fetchPerRound / keywords…），而且它真正生效的家在刷B站插件自己的設定裡 —— '
+  'silt 只是透過一個橋（lib/bili.js）去讀寫。')
+P('問題不是技術上的，是**歸屬模糊**：兩個插件各有一套「多久去一次」的判斷，'
+  '出事時看不出是哪一邊決定的。所以整條拆掉。')
+code('刪除：lib/bili.js（整個檔案）\n'
+     '      silt_bili 工具（status / tune）\n'
+     '      值守的 B站 那一輪（computeDue / kindOf / arm / buildPrompt 的【出門看看】）\n'
+     '      cfg.bili / cfg.biliEveryHours、RHYTHM_TUNABLES 的 biliEveryHours\n'
+     '      runtime.lastBiliAt / biliTuned / biliTunedAt\n'
+     '      BILI_TUNABLES / BILI_DEFAULTS / sanitizeProfile / diffProfile\n'
+     '      DOMAINS 的 \'bili\'、evidence 的 bvid\n'
+     '      POST /bili 端點、state 的 bili 欄位、client.js 141 行 UI')
+P('silt 現在只管記憶與自我。刷不刷、什麼時候刷，完全由刷B站的 duty.md 決定。')
+
+doc.add_heading('19.2　形象照：位置常駐、1:1、跟著性格卡高度', level=2)
+P('頁面左上那組現在是「形象照（左）+ 性格卡（右）」。')
+P('⚠️ 舊行為是「沒有圖就整塊不出現」。問題：版面每次載入都在跳，而且看不出這裡本來該有一張。'
+  '現在改成**沒有圖也畫一個佔位卡**（虛線邊 + 一句提示），位置與比例跟有圖時完全一樣。')
+code('卡本身：height: 100% + aspect-ratio: 1 / 1\n'
+     '外層 grid：grid-template-columns: auto 1fr; align-items: stretch\n'
+     '⇒ 兩欄等高，左欄寬度由高度反推成正方形')
+P('圖片來源目前**不變**：<DSH_HOME>/silt/portrait.(jpg|jpeg|png|webp)，由本機檔案提供。')
+P('⚠️ 「由模型在反思時自行決定是否換圖」**還沒做**。缺口是「圖從哪裡來」：'
+  '插件裡沒有任何生圖能力，圖片要嘛接生圖 API、要嘛本人準備一批候選、要嘛模型只寫描述。'
+  '這個決定沒下，所以這一輪只留位置。')
+
+doc.add_heading('19.3　重述的三道圍欄', level=2)
+P('recast（重述）原本可以無限次做：每次寫 1000 字、永遠留 T3、永不沉 T2 —— 整條壓縮階梯被繞過。')
+code('① 只作用於 T3（T1 事實 / T2 概 / T4 雜項 / T5 預測都不給）\n'
+     '② 同一條最多 3 次（recastCount 跨版本累加；recall 輸出帶 recastLeft）\n'
+     '③ 不重置壓縮時鐘（lastCondensedAt 與 bornAt 都沿用原條）')
+P('⚠️ ③ 單獨不夠：重述產生的是**新記憶**，而壓縮目標公式用的是「從誕生起的天數」。'
+  '只不動 lastCondensedAt 還是會讓長度目標隨 bornAt 重置而變長。所以還需要 ② 那個絕對上限。')
+
+doc.add_heading('19.4　掃描不算想起', level=2)
+P('`R` 太值錢了（R=10 ⇒ 1057 天不落 T2），所以「翻一遍看看」不能算想起：')
+code('帶 query 的 recall            → 算（找一件特定的事）\n'
+     '只給 limit 的 recall          → 不算（翻一遍看看）\n'
+     'countAsRecall: false          → 不算（呼叫方明說「這只是看看」）')
+P('為什麼：反思每 12 小時一輪、每輪都「讀關於本人的記憶」再打分 —— 那是瀏覽。'
+  '如果瀏覽也算，同一批記憶第 5 天就把 R 灌滿、變成三年不壓不淡，'
+  '而反思沒讀到的照常 175 天收短。結果是「反思的閱讀習慣」決定哪些記憶長生不老。')
+P('⚠️ 但這只擋 R（半衰期），**不擋 T4 的權重**：'
+  'n 是插件自動記的副作用（翻到就算），weight 是模型自己給的判斷（這一提有多重）。'
+  '掃描不該有副作用，但模型在掃描時主動給的份量仍然該算數。'
+  '所以 bumpRecall 拆成 bumpN / bumpWeight 兩個開關，dedup 也只作用在前者。')
+
+doc.add_heading('19.5　誰訂的旋鈕：setBy 與 config.profile', level=2)
+P('反思提示詞有一條規矩：「本人在對話裡親口訂過的數字，你不要自己改」。'
+  '但這一輪是新開的會話，看不到那句話 —— 所以需要一個當時看得到的依據。')
+code('silt_duty read / silt_inject read 都回 setBy：\n'
+     '  { injectBudget: { setBy: \'user\' | \'model\' | \'default\', at: \'...\' } }')
+P('⚠️ 這個欄位原本是壞的：`setBy` 掃的是帳本，而頁面改設定走 saveConfig() —— '
+  '**只寫 config.json、不 append**。於是本人在頁面上訂的數字看起來像「沒人訂過」，模型就去動它。')
+P('後果有兩個：')
+code('(a) 設定會在重啟時被帳本蓋掉 —— load() 先讀 config.json 再重放帳本，\n'
+     '    apply(\'inject.profile\') 會用舊記錄蓋掉頁面改的值\n'
+     '(b) setBy 回 default ⇒ 反思判定「可以調」⇒ 模型去動它')
+P('修法：saveConfig() 也寫一筆 config.profile（actor: \'user\'），apply 加對應分支。'
+  '這條鏈接上之後，「我們不是在這個對話說好了 3200」那種事才有機制層的防線。')
+
+doc.add_heading('19.6　回滾：replaceAll 不帶 memories 就沒有清空的權力', level=2)
+P('這是一個真的會毀掉全部記憶的路徑，記在這裡當教訓。')
+code('snapshotOf(\'inject\', …) 的 before 是 { injectCount, injectBudget }\n'
+     '  —— 一個沒有 memories 的物件。\n'
+     '舊版 rollback 把 inject / rhythm 丟進 else 分支：\n'
+     '  restore = { replaceAll: snap.before }\n'
+     'apply(\'rollback\') 的 replaceAll 分支第一行就是 memories.clear()，\n'
+     '  然後 for (const m of undefined || []) 一條都補不回來 ⇒ 記憶全沒。')
+P('本人在頁面上對一筆「調注入量」按回滾就中，而且 reload 會重放這筆記錄，重啟也回不來。')
+P('兩道修法都做了：')
+code('① rollback 補 inject / rhythm / config 分支 ⇒ 只回 cfg，一個字都不碰記憶\n'
+     '② 護欄：replaceAll 沒有 memories 陣列就拒絕；else 分支沒有 memories 直接拒回滾')
+P('⚠️ 教訓不只是這一行。真正該記住的是：**一個資料結構被兩種用途拿去用，而形狀對不上。** '
+  'snapshot 的 before 有時是「一條記憶」、有時是「一組旋鈕數字」，rollback 卻只有一套處理。'
+  '那時應該問的是「這個欄位的形狀是什麼」，而不是「scope 名字對不對」。')
+
+doc.add_heading('19.7　幾個順手補上的閘', level=2)
+code('importance 門檻     以前只寫在註解裡，程式碼從沒讀過 minImportance —— 現在真的檢查\n'
+     'tier 非法           靜默 fallback 到 3 ⇒ 改成報錯（那個 fallback 掩蓋了 condense 少填 tier）\n'
+     'quote 掃描          quote 是證據，只過憑據閘、不過技術閘\n'
+     'import 掃描         補上 tags / quote / persona / foundation / selfView（原本漏一半）\n'
+     'Boolean 字串        "false" 現在真的是 false（以前 Boolean(\'false\') === true）\n'
+     'T5 到期邊界         到期日當天仍有效，隔天才過期（+08:00，不是 UTC 零點）\n'
+     '輸出截斷            超過 6000 字改成整條丟 + 回報 truncated，不再硬切字串產出壞 JSON')
 
 doc.save(OUT)
 print('saved:', OUT)

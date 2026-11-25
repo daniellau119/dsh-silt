@@ -4,13 +4,13 @@
 
 [中文](README.md)
 
-> Cross-session memory and persona plugin for DSH · `v1.9.0` · 2026-11-25
+> Cross-session memory and persona plugin for DSH · `v1.10.0` · 2026-11-25
 
 `dsh-silt` is a long-term memory and persona-growth engine built for the DSH host process. It gives a model a memory that self-evolves, settles in layers, and can be interrogated — plus a persona card that grows out of the conversation itself.
 
 ---
 
-![DSH plugin](https://img.shields.io/badge/DSH-plugin-blue) ![version](https://img.shields.io/badge/v1.9.0-green) ![license](https://img.shields.io/badge/license-MIT-brightgreen)
+![DSH plugin](https://img.shields.io/badge/DSH-plugin-blue) ![version](https://img.shields.io/badge/v1.10.0-green) ![license](https://img.shields.io/badge/license-MIT-brightgreen)
 
 </div>
 
@@ -83,18 +83,82 @@ Recall is written into the **half-life**, not into a per-turn ranking boost — 
 **it lives longer**, not "it sorts first every time". The latter lets one memory squat on the injection budget
 and pushes everything else out.
 
-**T4 is a buffer, not a bin** — never injected. Each time it comes back, the model says how much
-that recall weighed (0–0.5); when the total reaches 1 it is promoted to T3. If nobody recalls it, it drifts away.
+**T4 is a buffer, not a bin** — never injected. Each time it comes back, the model gives an
+**integer weight**: `0` = merely scanned past (no weight), `1` = came to mind in passing,
+`2` = it actually connected to something else or was confirmed. When the total reaches **3** it is
+promoted to T3 — so *two deliberate recalls* or *three passing ones*. If nobody recalls it, it drifts away.
 
 Why not "promoted after three recalls": three is a count, not a weight. "He mentioned that name again"
 and "he suddenly brought it up" both count once, but they should not weigh the same. Only the model can
-say how much, and the plugin just adds it up.
+say how much, and the plugin just adds it up. Integers rather than decimals because picking between
+0.2 / 0.3 / 0.4 is something the model does *unreliably*; picking between 1 and 2 it does consistently.
+The arithmetic is also transparent: it can work out "two more and this stays".
+
+#### What counts as "recalled"
+
+`R` is expensive (R=10 ⇒ 1057 days before it becomes a gist), so **a scan must not count**:
+
+| Action | Counts? |
+|---|---|
+| `silt_recall` **with a query** (looking for one specific thing) | ✅ yes |
+| `silt_recall` with only `limit` (paging through) | ❌ no |
+| Any recall with `countAsRecall: false` | ❌ no |
+
+Why: reflection runs every 12 hours and every round "reads memories about the owner" before scoring —
+that is *browsing*, not recalling a specific thing. If browsing counted, the same batch would max out `R`
+within five days and stop being compressed or fading for three years, while memories reflection never
+touched would still fade in 175 days. **The result is that reflection's reading habits decide which
+memories become immortal**, not whether those things actually matter.
+
+> ⚠️ This blocks `R` (half-life) only — **not T4's weight**: `n` is a side effect the plugin records
+> automatically (it was found, so it counts), whereas `weight` is a judgement the model gives.
+> Scanning should have no side effects, but weight the model *explicitly* gives while scanning still counts.
 
 **T5 expiry is not the end** — after the deadline it stays in the prompt, tagged `⏰expired`, forcing the model to go ask how it turned out. Only being voided removes it.
 
 ```
 - T5 user getting married on 20 Dec (2026-11-15) — due 2026-12-20 ⏰expired
 ```
+
+---
+
+## What makes it different
+
+**1. Forgetting happens to the content, not just the ordering**
+
+In most systems decay only decides *who goes into the prompt first*; the memory itself loses nothing.
+Here a T3 is genuinely re-told every 7 days, its target length following a power law
+(`initial × (1 + 0.14·T/s)^-0.5`), settling into T2 in roughly 175 days.
+
+Forgetting costs actual content — it is not a change of position.
+
+**2. Being recalled extends a memory's life**
+
+Each recall multiplies the effective half-life by `1.2^R` (capped at 10), and the compression timeline
+stretches with it.
+
+A memory recalled ten times: half-life 180 d → 1115 d, and it takes **1057 days** to become a gist.
+One never recalled becomes a gist in 175 days.
+
+Unlike a ranking boost: a boost only makes it *more likely to be picked*, whereas this makes it
+**live longer**. And "compressed to T2" always happens before "faded out of sight" — the order is
+shorten first, fade later.
+
+**3. Forecasts have a deadline, and expiring does not delete them**
+
+T5 carries `expiresAt`, at whatever granularity you can manage — a year is fine. After expiry it stays
+in the prompt tagged `⏰expired`; only being voided removes it.
+
+An expired forecast should not quietly rot in storage. Expiry is not the end, it is the signal that
+"this one needs an answer".
+
+**4. Void, rather than rewrite**
+
+When the owner says "I remembered that wrong", the original title and body stay untouched; only
+`voided` / `voidedReason` / `replacedBy` are added.
+
+Rewriting would erase history; voiding says "this is what I knew then, and later it turned out not to be so."
+A voided memory leaves the prompt but `recall` still finds it, tagged `voided: true`.
 
 ---
 
@@ -197,6 +261,20 @@ Six months on, recalling "he always works late at night" — the fact is unchang
 **A recast never settles into T2**, because it is a thing still being thought about and should not be nailed down. The original row stays in the ledger (`memory.recast`), so she can see how she used to see it.
 
 The division of labour with `silt_void`: void says "this is no longer true"; recast says "my view has changed".
+
+#### Recast has three fences
+
+Without limits, `recast` becomes a "never shrink" button: write up to 1000 chars every time, always stay in
+T3, never settle into T2 — the whole compression ladder is bypassed. So:
+
+| Fence | Rule |
+|---|---|
+| T3 only | Facts (T1), gists (T2), scratch (T4) and forecasts (T5) cannot be recast |
+| At most 3 per memory | `recastCount` **accumulates across versions**; the 4th is refused. `silt_recall` returns `recastLeft` |
+| Does not reset the compression clock | `lastCondensedAt` and `bornAt` both carry over — otherwise the clock is effectively zeroed |
+
+> ⚠️ "Does not reset the clock" alone is not enough: a recast produces a **new memory**, and the
+> compression target formula uses "days since birth". Hence the absolute cap above.
 
 ---
 
@@ -334,9 +412,20 @@ The model may adjust these itself, but each has a hard range. Out-of-range value
 |---|:--:|:--:|---|
 | `injectBudget` | 1800 | 600–3200 | Character budget for injection — the one to tune |
 | `injectCount` | 12 | 1–64 | ⚠️ No longer effective: slots are derived from the budget ÷ 50 |
-| `reflectionEveryHours` | 24 | 6–72 | How often to reflect |
+| `reflectionEveryHours` | 24 | 6–72 | How often to reflect (ignored once `reflectionAt` is set) |
+| `reflectionAt` | `null` | `["19:00","07:00"]` | Fixed clock times (UTC+8); `reflectionEveryHours` no longer applies |
 | `dutyMaxPerDay` | 2 | 1–4 | Max duty rounds per day |
-| `tier4TtlDays` | 30 | 0–90 | Scratch retention in days (0 = never expires) |
+| `tier4TtlHours` | 48 | 24–168 | Scratch lifetime in **hours** (1–7 days); 0 = never expires (special case) |
+
+**Every knob reports who last set it.** `silt_duty` and `silt_inject` both return a `setBy`
+field: `user` (set by the owner, in the UI), `model` (tuned by the model), or `default`
+(never touched). The reflection prompt uses it to decide what may be changed —
+**anything marked `user` is off limits.**
+
+> Why this field exists: page edits used to write only `config.json` and never the ledger.
+> `setBy` scans the ledger, so numbers the owner set looked like "nobody set this" and the
+> model went ahead and changed them. `saveConfig()` now writes a `config.profile` record
+> with `actor: 'user'`, which is what makes the chain consistent.
 
 
 ---
@@ -374,10 +463,37 @@ When a round lands in DeepSeek's discount window (noon 12–14, evening 18–09:
 The reflection brief is numbered:
 
 ```
-1 state & rhythm  2 old-memory compression  3 scratch
-4 memory quota    5 self & persona          6 future commitments
-7 knowing you     8 red lines               9 wrap-up
+1 state & rhythm   2 old-memory compression  3 scratch (T4)
+4 memory quota     4.5 re-reading old events 5 self & persona
+6 future commitments  6.5 speaking up        7 knowing you
+8 red lines        9 wrap-up
 ```
+
+> 4.5 and 6.5 contain instructions rather than tasks of their own, so they only appear when there is
+> something to act on (a memory worth re-reading, or words still held back). A round with nothing to
+> re-read simply goes from 4 to 5.
+
+---
+
+## Speaking up
+
+`silt_speak` is the only path that lets it talk to the owner without being asked first.
+
+**Two conditions only: off-peak, and its own judgement.**
+
+What was deliberately left out, and why:
+
+| Not added | Why |
+|---|---|
+| Daily cap | That would override its reading of the situation with the plugin's preference |
+| Cooldown | Having something to say and being blocked by "wait 12 hours" means the plugin is lying |
+| Interruption score / busy detection | It knows the situation better than a timer does |
+| Score threshold | Make it compute a number and pass a bar, and it learns to game the bar |
+
+The plugin only does the two things the model cannot: **read the clock** (is it off-peak) and
+**deliver** (it has no scheduling service).
+
+Deciding not to speak, with `op: "defer"` and a one-line reason, is recorded too — **silence is not failure**.
 
 ---
 
@@ -424,10 +540,22 @@ Tiering, forgetting curves and memory consolidation are nothing new. What is dif
 
 The constellation icon in the left sidebar.
 
+- **Portrait + persona card** — side by side; the portrait is square, its side equal to the persona card's height
 - **Memory constellation** — 3D: six dimensions are six directions, tier sets the radius, brightness = salience
 - **Still remembered** — T5 shows its deadline and overdue state
 - **Self-view / persona card / what it knows about you / autonomous rhythm**
 - **Evidence chain and rollback** — snapshot list, one-click import
+
+### Portrait
+
+The left card is **always there**: it shows the image if one exists, and a dashed placeholder if not.
+
+- Source: `<DSH_HOME>/silt/portrait.(jpg|jpeg|png|webp)` — changing the portrait means replacing that file
+- Ratio is fixed at **1:1**, and its height follows the persona card beside it (taller persona card ⇒ larger portrait)
+- ⚠️ Today the **owner** drops the file in; the model has no way to change it.
+  "Let it decide during reflection whether to change the portrait" is not implemented — where images
+  would come from (an image-generation API / a pool the owner prepares / the model only writing a
+  description) has not been decided, so this round only reserves the slot.
 
 ---
 
