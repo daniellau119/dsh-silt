@@ -94,11 +94,12 @@ console.log('\n13) importBundle 的掃描範圍跟 writeMemory 一致')
 console.log('\n14) Boolean 字串："false" 不是 true')
 {
   const dir = mkdtempSync(join(tmpdir(), 'silt-r7b-'))
-  writeFileSync(join(dir, 'config.json'), JSON.stringify({ enabled: 'false', bili: 'true', speak: 'off' }), 'utf8')
+  // ⚠️ 2026-11-25：`bili` 設定項已隨 B站 一起拆掉，改用還在的布林（speak / enabled）。
+  writeFileSync(join(dir, 'config.json'), JSON.stringify({ enabled: 'false', speak: 'true', reflection: 'off' }), 'utf8')
   const s = new Store(dir).load()
   ok(s.cfg.enabled === false, `"false" 讀成 false（實際 ${s.cfg.enabled}）—— 舊版是 true`)
-  ok(s.cfg.bili === true, '"true" 讀成 true')
-  ok(s.cfg.speak === false, `"off" 讀成 false（實際 ${s.cfg.speak}）`)
+  ok(s.cfg.speak === true, '"true" 讀成 true')
+  ok(s.cfg.reflection === false, `"off" 讀成 false（實際 ${s.cfg.reflection}）`)
   rmSync(dir, { recursive: true, force: true })
 }
 

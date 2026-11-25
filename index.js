@@ -10,7 +10,7 @@
  *   2. **注入**：把「現在的自己 + 仍記得的 + 還不明白的」壓成一段系統提示，每個會話都看得到。
  *   3. **七隻手**：silt_recall / remember / revise / shape / persona / archive / duty。
  *   4. **谷時值守**：落在 DeepSeek 優惠時段才排一輪自主任務，交給 Harness 自己開會話去決定
- *      「要不要刷 B站、要不要整理、要不要改自己」—— 決定不做也是有效決策。
+ *      「要不要整理、要不要改自己」—— 決定不做也是有效決策。
  *
  * 硬性界線（本檔與 lib/ 一起釘死）：代碼 / 技術決策 / 環境配置不入記憶；不記身份證與信用卡；
  * 記憶不能捏造（每筆都釘著寫入時的會話作為證據）；任何改寫都不可靜默抹除。
@@ -22,7 +22,6 @@ import { fileURLToPath } from 'node:url'
 import { Store } from './lib/store.js'
 import { buildTools } from './lib/tools.js'
 import { makeDuty, inValley } from './lib/duty.js'
-import { makeBili } from './lib/bili.js'
 import { makeFence, makeRoutes } from './lib/routes.js'
 
 export const name = 'silt'
@@ -108,9 +107,7 @@ export function apply(ctx, config) {
   // 谷時判斷只留在 duty 一處（跟值守同一組窗口）——
   // store 要用的時候向這裡拿，兩邊不會各有一套說法。
   store.valleyOf = (now) => inValley(now)
-  // 「允許它自己調用刷B站」的橋：這頁只給許可，刷不刷與那些參數由它自己判斷
-  store.bili = makeBili({ store, webServer: ctx.get ? ctx.get('webServer') : undefined, log })
-
+  
   /* ── 七隻手 ── */
   let toolCount = 0
   try {
@@ -180,7 +177,7 @@ export function apply(ctx, config) {
    * 60 分鐘一拍（原本 120 秒）。
    *
    * 為什麼敢放到這麼鬆：這個心跳要做的判斷全是「日級」的 ——
-   * 反省到期 24 小時、B站到期 20 小時、待確認 7 天過期。
+   * 反省到期 6–72 小時、待確認 7 天過期。
    * 60 分鐘的粒度對這些節律完全夠，而每一拍都要寫一次 runtime.json（lastTickAt），
    * 120 秒等於一天寫 720 次，純粹是白寫。
    *

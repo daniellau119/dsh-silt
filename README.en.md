@@ -308,7 +308,6 @@ Every mutation carries before/after snapshots and can be rolled back by id.
 | `silt_duty` | Read/adjust own rhythm |
 | `silt_inject` | Read/adjust injection size |
 | `silt_unseen` | Page through titles that didn't fit in the prompt |
-| `silt_bili` | Bilibili browsing parameters |
 | `silt_archive` | Verify the hash chain |
 
 What the model does not have: **delete, rewrite, rollback, import, master switch**. Only the user can touch these.
@@ -336,11 +335,9 @@ The model may adjust these itself, but each has a hard range. Out-of-range value
 | `injectBudget` | 1800 | 600–3200 | Character budget for injection — the one to tune |
 | `injectCount` | 12 | 1–64 | ⚠️ No longer effective: slots are derived from the budget ÷ 50 |
 | `reflectionEveryHours` | 24 | 6–72 | How often to reflect |
-| `biliEveryHours` | 20 | 6–72 | How often to browse Bilibili |
 | `dutyMaxPerDay` | 2 | 1–4 | Max duty rounds per day |
 | `tier4TtlDays` | 30 | 0–90 | Scratch retention in days (0 = never expires) |
 
-Bilibili browsing has its own whitelist (`perDay`, `fetchPerRound`, `keywords`, …). Account, DMs, auto-comment and other sensitive items stay with the user and are not open to model adjustment.
 
 ---
 
@@ -370,7 +367,7 @@ The ledger also contains older `memory.revise`, `memory.forget` and `origin.set`
 
 ## Off-peak duty
 
-When a round lands in DeepSeek's discount window (noon 12–14, evening 18–09:00 the next day, all weekend) and something is due, it schedules an autonomous round — a fresh session that decides for itself whether to tidy memory, browse Bilibili, or change its own persona.
+When a round lands in DeepSeek's discount window (noon 12–14, evening 18–09:00 the next day, all weekend) and something is due, it schedules an autonomous round — a fresh session that decides for itself whether to tidy its memory or change its own persona.
 
 **"Nothing needs changing" is a valid decision.**
 

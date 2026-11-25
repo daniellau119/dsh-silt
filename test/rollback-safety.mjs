@@ -49,7 +49,8 @@ console.log('\n致命 1b) 回滾「調節律」也一樣')
   const s = fresh()
   seed(s, 2)
   const before = s.memories.size
-  const r = s.tuneRhythm({ biliEveryHours: 30 }, { reason: 'test', actor: 'model' })
+  // ⚠️ 2026-11-25：`biliEveryHours` 已隨 B站 拆掉，改用還在的節律旋鈕。
+  const r = s.tuneRhythm({ reflectionEveryHours: 30 }, { reason: 'test', actor: 'model' })
   const rb = s.rollback(r.snapshotId)
   ok(rb.ok === true, '回滾成功')
   ok(s.memories.size === before, `記憶還在（${s.memories.size} / ${before}）`)

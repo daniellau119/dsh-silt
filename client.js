@@ -123,12 +123,9 @@ window.__ModuleLoader__.load({
         r_reflection: 'Periodic reflection round',
         r_reflection_note:
           'Every N hours it runs one round: go over what it kept (recall), fold experiences into gists (compress), add detail to a memory (revise), calibrate the six dimensions, decide whether its persona actually moved, and ask itself "who am I". "No change needed" is a normal outcome, not a failure.',
-        r_bili: 'Allow it to call the B站 scrolling tools by itself (permission only — it still decides whether and how much)',
-        r_bili_note2: 'Permission only. Turning this on does not make it scroll; it only means it may.',
         r_valley: 'Only during token valley hours',
         r_valley_note: 'Off = it may act at any hour (more tokens). On = only inside the discount windows 12:00–14:00 and 18:00–09:00, weekends all day.',
         n_reflect_h: 'Reflection interval (h)',
-        n_bili_h: 'B站 interval (h)',
         n_daily: 'Duties per day',
         n_inject: 'Memories injected',
         n_slots: 'Slots (derived from the budget):',
@@ -137,12 +134,11 @@ window.__ModuleLoader__.load({
         valley_now: 'In a valley window',
         valley_no: 'Peak hours',
         last_reflect: 'Last reflection',
-        last_bili: 'Last B站 round',
         duties_today: 'Today',
         never: 'never',
         run_now: 'Run a round now',
         run_now_hint:
-          'Runs one round right now, ignoring the due interval, the valley window and the daily cap (and moves the last-run clock to now). The kinds are the ones due naturally — reflection and/or B站 — and if none are due it falls back to a reflection round. A round may also do nothing at all, which is a valid answer.',
+          'Runs one round right now, ignoring the due interval, the valley window and the daily cap (and moves the last-run clock to now). The kind is the one due naturally — reflection — and if none is due it falls back to a reflection round. A round may also do nothing at all, which is a valid answer.',
         run_now_locked: 'Master switch is off',
         run_now_locked_hint: 'Nothing runs while the master switch ("Let it grow on its own") is off. Turn that on first.',
         run_now_run: 'Starting…',
@@ -153,52 +149,11 @@ window.__ModuleLoader__.load({
         armed_badge: 'queued · {kinds}',
         recent_duties: 'Recent rounds',
         kind_reflect: 'reflection',
-        kind_bili: 'B站',
         why_due: 'due on schedule',
         why_forced: 'run by you',
         why_explicit: 'chosen by you',
         background: 'in the background',
 
-        /* 刷B站 */
-        bili_account: 'B站 account',
-        bili_login: 'Scan to sign in',
-        bili_logged_in: 'Signed in',
-        bili_account_id: 'Account id',
-        bili_login_at: 'Signed in at',
-        bili_cred_note: 'read from this machine only — no session key is shown',
-        bili_cred_missing: 'no credential file on this machine',
-        bili_logged_out: 'Not signed in',
-        bili_scan_hint: 'Open B站 on your phone → Me → Scan, then scan this code. It expires in about 3 minutes.',
-        bili_scan_wait: 'waiting for the scan…',
-        bili_scanned: 'scanned — confirm it on your phone',
-        bili_expired: 'the code expired, ask for a new one',
-        bili_success: 'signed in',
-        bili_fail: 'could not sign in',
-        bili_no_qr: 'the scrolling plugin did not draw a QR code (its qrcode dependency is missing)',
-        bili_no_sess: 'the response carried no SESSDATA',
-        missing_deps: 'missing {list}',
-        bili_mounted: 'Installed',
-        bili_missing: 'Not installed',
-        bili_note: 'This switch only grants or withholds permission. It does not make it scroll — whether to scroll, for how long, and how much it reads are its own calls, made during a valley-hours duty round from what it has come to prefer.',
-        bili_settings: 'Its scrolling settings',
-        bili_tuned: 'Tuned by itself',
-        bili_never: 'It has not changed these yet.',
-        bili_perDay: 'titles per day',
-        bili_fetchPerRound: 'looked at per round',
-        bili_searchPages: 'search pages',
-        bili_searchSort: 'search order',
-        bili_manualMax: 'titles per manual round',
-        bili_manualCooldownMin: 'manual cooldown (min)',
-        bili_commentLength: 'comment length',
-        bili_keywords: 'keywords',
-        bili_excludeWords: 'excluded words',
-
-        /* 刷B站設定頁上的橫幅 */
-        bili_banner: 'Owned by Silt',
-        bili_hold_yes: 'it may call the B站 tools by itself — the numbers below are under its control too',
-        bili_hold_no: 'it may NOT call the B站 tools',
-        bili_hold_always: 'the master switch is off, so it may not call them',
-        bili_banner_go: 'Open Silt',
 
         /* 依據鏈與回滾 */
         safety: 'Chain & rollback',
@@ -344,12 +299,9 @@ window.__ModuleLoader__.load({
         r_reflection: '週期反省（一整輪）',
         r_reflection_note:
           '每隔 N 小時跑一輪：走一遍記下的東西（召回）、把經歷壓成大概（壓縮）、給某條記憶補細節（修訂）、校準六維，決定性格卡有沒有真的移動，最後問自己「我是誰」。覺得沒必要改就不改 —— 那是有效結果。',
-        r_bili: '允許它自行調用刷B站工具（這只是許可；刷不刷、刷多少仍由它自己決定）',
-        r_bili_note2: '這只是許可。打開不代表它會去刷，只代表它可以。',
         r_valley: '只在 token 谷時動作',
         r_valley_note: '關＝任何時間都可能動作（更花 token）；開＝只在優惠時段（12:00–14:00、18:00–次日 09:00，週末全天）。',
         n_reflect_h: '反省間隔（小時）',
-        n_bili_h: '刷B站間隔（小時）',
         n_daily: '每天值守次數',
         n_inject: '注入記憶條數',
         n_slots: '注入位置（由預算推導）：',
@@ -358,12 +310,11 @@ window.__ModuleLoader__.load({
         valley_now: '正在谷時',
         valley_no: '尖峰時段',
         last_reflect: '上次反省',
-        last_bili: '上次看 B站',
         duties_today: '今天',
         never: '還沒有',
         run_now: '現在跑一輪',
         run_now_hint:
-          '馬上跑一輪：不理到期間隔、不理谷時、不理每日上限（並把「上次」推到現在）。跑哪幾種看自然到期的結果 —— 反省和/或刷B站；都沒到期就跑一輪反省。這一輪也可能甚麼都不做，那也是有效結果。',
+          '馬上跑一輪：不理到期間隔、不理谷時、不理每日上限（並把「上次」推到現在）。跑不跑看自然到期的結果 —— 就是反省；沒到期就跑一輪反省。這一輪也可能甚麼都不做，那也是有效結果。',
         run_now_locked: '總開關是關的',
         run_now_locked_hint: '總開關「讓它自己長」關著時甚麼都不會跑。要跑先打開它。',
         run_now_run: '正在起…',
@@ -374,52 +325,11 @@ window.__ModuleLoader__.load({
         armed_badge: '已排隊 · {kinds}',
         recent_duties: '最近的輪次',
         kind_reflect: '反省',
-        kind_bili: '刷B站',
         why_due: '到期自動',
         why_forced: '你手動觸發',
         why_explicit: '你指定',
         background: '在背景跑',
 
-        /* 刷B站 */
-        bili_account: 'B站 帳號',
-        bili_login: '掃碼登入',
-        bili_logged_in: '已登入',
-        bili_logged_out: '未登入',
-        bili_account_id: '登入 id',
-        bili_login_at: '登入時間',
-        bili_cred_note: '只讀本機那份憑證；不會顯示會話密鑰',
-        bili_cred_missing: '本機找不到憑證檔',
-        bili_scan_hint: '手機開 B站 → 我的 → 掃一掃，掃這張碼；大約 3 分鐘內有效。',
-        bili_scan_wait: '等掃碼…',
-        bili_scanned: '掃到了，請在手機上確認',
-        bili_expired: '二維碼過期了，再點一次「掃碼登入」',
-        bili_success: '登入成功',
-        bili_fail: '沒登上',
-        bili_no_qr: '刷B站沒畫出二維碼（它缺 qrcode 依賴）',
-        bili_no_sess: '響應裡沒有 SESSDATA',
-        missing_deps: '缺 {list}',
-        bili_mounted: '已安裝',
-        bili_missing: '沒偵測到',
-        bili_note: '這個開關只決定「准不准」，不會叫它去刷 —— 刷不刷、刷多久、看幾條，都是它在谷時值守那一輪裡按自己的喜好決定的。',
-        bili_settings: '它的刷B站設定',
-        bili_tuned: '它自己調過的',
-        bili_never: '它還沒動過這些。',
-        bili_perDay: '每天最多挑幾條',
-        bili_fetchPerRound: '一輪細看幾條',
-        bili_searchPages: '搜索翻幾頁',
-        bili_searchSort: '搜索排序',
-        bili_manualMax: '手動一輪最多幾條',
-        bili_manualCooldownMin: '手動間隔（分鐘）',
-        bili_commentLength: '評論長度',
-        bili_keywords: '關注關鍵詞',
-        bili_excludeWords: '排除詞',
-
-        /* 刷B站設定頁上的橫幅 */
-        bili_banner: '由 Silt 管',
-        bili_hold_yes: '它可自行調用 B站 工具；下面那些數字也歸它按喜好調整',
-        bili_hold_no: '它不可以自行調用 B站 工具',
-        bili_hold_always: 'Silt 的總開關是關的，所以它不可以調用',
-        bili_banner_go: '打開 Silt',
 
         /* 依據鏈與回滾 */
         safety: '依據鏈與回滾',
@@ -586,7 +496,7 @@ window.__ModuleLoader__.load({
       return langStore.value
     }
 
-    const kindText = (kinds, t) => (kinds || []).map((k) => t(k === 'bili' ? 'kind_bili' : 'kind_reflect')).join(' + ')
+    const kindText = (kinds, t) => (kinds || []).map((k) => t(k)).join(' + ')
 
     /* ───────── 行內樣式表：桌面版把 <style>/CSS 字串吃掉，只有 style 屬性活得下來 ───────── */
 
@@ -1191,18 +1101,13 @@ window.__ModuleLoader__.load({
       const [openMem, setOpenMem] = useState({})
       const [memTier, setMemTier] = useState(null)
       const [memPage, setMemPage] = useState(0)
-      const [biliS, setBiliS] = useState(null)
-      const [qr, setQr] = useState(null)
-      const [loginMsg, setLoginMsg] = useState('')
       const [resetArm, setResetArm] = useState(false)
       // 兩顆主行動鍵各自記自己的狀態。問題從來不是「按了沒反應」，是按完之後介面沒交代；
       // 所以這裡記到能講清楚：送出了 → 排進排程了 / 卡在哪 → 跑完了還是這一輪決定不寫。
       const [runSelf, setRunSelf] = useState({ phase: 'idle', note: '', detail: '' })
       const [runDutyState, setRunDutyState] = useState({ phase: 'idle', note: '', detail: '' })
       const watchRef = useRef({ until: 0, which: '', before: {} })
-      const loginTimer = useRef(0)
       const mounted = useRef(true)
-      const holdState = useRef(null)
 
       useLang()
       const t = tt
@@ -1212,28 +1117,6 @@ window.__ModuleLoader__.load({
         ensureStyles()
         return () => {
           mounted.current = false
-          if (loginTimer.current) window.clearInterval(loginTimer.current)
-        }
-      }, [])
-
-      // 刷B站那一頁的介面只認本人在場的登入態 —— 所以從**這一頁**（同源、帶 cookie）去問它
-      useEffect(() => {
-        let alive = true
-        const pull = async () => {
-          try {
-            const res = await fetch('/api/bili-duty/status', { credentials: 'same-origin', headers: { accept: 'application/json' } })
-            if (!res.ok) return
-            const body = await res.json()
-            if (alive) setBiliS(body)
-          } catch {
-            /* 沒開那個插件就算了 */
-          }
-        }
-        void pull()
-        const id = window.setInterval(pull, 8000)
-        return () => {
-          alive = false
-          window.clearInterval(id)
         }
       }, [])
 
@@ -1409,7 +1292,6 @@ window.__ModuleLoader__.load({
       }, [state, runSelf.phase, runDutyState.phase, t])
 
       useEffect(() => {
-        holdState.current = state ? { enabled: Boolean(state.cfg?.enabled), bili: Boolean(state.cfg?.bili) } : null
         if (state?.cfg) syncBanner()
       }, [state])
 
@@ -1422,8 +1304,7 @@ window.__ModuleLoader__.load({
             .then((r) => (r.ok ? r.json() : null))
             .then((j) => {
               if (!j?.ok) return
-              holdState.current = { enabled: Boolean(j.cfg?.enabled), bili: Boolean(j.cfg?.bili) }
-              syncBanner()
+                    syncBanner()
             })
             .catch(() => {})
         }
@@ -1436,224 +1317,7 @@ window.__ModuleLoader__.load({
         if (state && foundationDraft == null) setFoundationDraft(state.foundation?.text || '')
       }, [state, foundationDraft])
 
-      /* ── B站 掃碼登入：直接在這一頁叫刷B站自己的登入介面（同源、帶 cookie） ── */
-      const biliCall = async (path, body) => {
-        const res = await fetch(`/api/bili-duty${path}`, {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { 'content-type': 'application/json', accept: 'application/json' },
-          body: JSON.stringify(body || {}),
-        })
-        const data = await res.json().catch(() => ({}))
-        return { status: res.status, data }
-      }
-
-      const stopLogin = () => {
-        if (loginTimer.current) window.clearInterval(loginTimer.current)
-        loginTimer.current = 0
-      }
-
-      const startLogin = async () => {
-        stopLogin()
-        setLoginMsg(t('bili_scan_wait'))
-        setQr(null)
-        const { status, data } = await biliCall('/login/start')
-        if (!data?.ok) {
-          setLoginMsg(`${t('bili_fail')}：${data?.error || `HTTP ${status}`}`)
-          return
-        }
-        if (!data.qr) {
-          setLoginMsg(`${t('bili_fail')}：${t('bili_no_qr')}`)
-          return
-        }
-        setQr({ src: data.qr, key: data.key })
-        let n = 0
-        loginTimer.current = window.setInterval(async () => {
-          n += 1
-          if (n > 90) {
-            stopLogin()
-            setQr(null)
-            setLoginMsg(t('bili_expired'))
-            return
-          }
-          const p = await biliCall('/login/poll', { key: data.key })
-          const phase = p.data?.state
-          if (phase === 'ok') {
-            stopLogin()
-            setQr(null)
-            setLoginMsg(t('bili_success'))
-            setBiliS((old) => ({ ...(old || {}), loggedIn: true }))
-          } else if (phase === 'scanned') {
-            setLoginMsg(t('bili_scanned'))
-          } else if (phase === 'expired') {
-            stopLogin()
-            setQr(null)
-            setLoginMsg(t('bili_expired'))
-          } else if (phase === 'unknown') {
-            stopLogin()
-            setQr(null)
-            setLoginMsg(`${t('bili_fail')}：${p.data?.message || t('bili_no_sess')}`)
-          }
-        }, 2000)
-      }
-
-      /** 一鍵導出：把 ledger.jsonl 原樣交下去（插件那邊同步寫一份 ledger.export.jsonl）。 */
-      const onExport = async () => {
-        setBusy('ledger.export')
-        try {
-          // 一次下載拿檔案；另打一次同樣的端點只碰 POST 那一半（寫副本 + 回摘要）
-          const download = fetch(`${API}/ledger.export`, { cache: 'no-store' })
-          const saved = post('/ledger.export', {}, { quiet: true })
-          const [res, head] = await Promise.all([download, saved])
-          if (!res.ok) {
-            const why = head?.error || `HTTP ${res.status}`
-            setNote(`${t('error')}: ${why}`)
-            return
-          }
-          const text = await res.text()
-          const blob = new Blob([text], { type: 'application/x-ndjson' })
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `ledger-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '')}.jsonl`
-          document.body.appendChild(a)
-          a.click()
-          a.remove()
-          window.setTimeout(() => URL.revokeObjectURL(url), 4000)
-          setNote(
-            t('ledger_export_done', {
-              file: head?.file || 'ledger.export.jsonl',
-              n: head?.records ?? text.split('\n').filter((s) => s.trim()).length,
-              kb: Math.round((head?.bytes ?? text.length) / 1024),
-            }),
-          )
-        } catch (err) {
-          setNote(`${t('error')}: ${String(err?.message || err)}`)
-        } finally {
-          setBusy('')
-        }
-      }
-
-      /** 導入 ledger.jsonl：先讀檔、驗鏈，只有本人再按一次才真的接上。 */
-      const onImportFile = async (event) => {
-        const file = event.target.files?.[0]
-        event.target.value = ''
-        if (!file) return
-        setBusy('ledger.import')
-        try {
-          const text = await file.text()
-          // ⚠️ 2026-11-25：這裡的註解一直寫「只有本人再按一次才真的接上」，但程式碼直接送了。
-          //    導入會**取代整本帳**，比清空重來更 destructive，所以真的要做一次確認。
-          //    後端 /ledger.import 現在也要 confirm:true（跟 /reset 同一道閘）。
-          const okGo = typeof window === 'undefined' ? true : window.confirm(t('ledger_import_confirm'))
-          if (!okGo) {
-            setBusy('')
-            return
-          }
-          const res = await post('/ledger.import', { text, source: file.name, confirm: true }, { quiet: true })
-          if (res?.ok) {
-            setNote(t('ledger_import_done', { n: res.imported, chain: res.chain?.ok ? t('chain_ok') : t('chain_sealed'), replaced: res.replaced || '—' }))
-          } else {
-            setNote(t('ledger_import_bad', { err: res?.error || t('error') }))
-          }
-        } catch (err) {
-          setNote(t('ledger_import_bad', { err: String(err?.message || err) }))
-        } finally {
-          setBusy('')
-        }
-      }
-
-      // 形象照：先探一下有沒有（沒有就不畫那個框）
-      const [portraitOk, setPortraitOk] = useState(null)
-      const portraitV = state?.runtime?.portraitAt || '1'
-      useEffect(() => {
-        let alive = true
-        fetch(`${API}/portrait`, { method: 'HEAD', credentials: 'same-origin' })
-          .then((r) => alive && setPortraitOk(r.ok))
-          .catch(() => alive && setPortraitOk(false))
-        return () => {
-          alive = false
-        }
-      }, [portraitV])
-
-      // 2026-11-22：形象照不再塞在標題那行（太小），改成跟性格卡一左一右擺在星圖上方。
-      // 沒有 portrait.jpg 就整塊不出現 —— 不留一個空框。
-      const portraitSection =
-        portraitOk === true
-          ? h(
-              'div',
-              { className: 'mn-portrait-card', style: { borderRadius: 14, overflow: 'hidden', border: `1px solid ${C.border1}`, background: C.base } },
-              h('img', {
-                src: `${API}/portrait?t=${portraitV}`,
-                alt: t('title'),
-                style: { display: 'block', width: '100%', height: '100%', minHeight: 360, objectFit: 'cover', objectPosition: '50% 20%' },
-              }),
-            )
-          : null
-
-      const header = h(
-        'header',
-        { className: 'mn-head', style: { display: 'flex', alignItems: 'flex-start', gap: 14, padding: '18px 24px 14px', borderBottom: `1px solid ${C.border1}`, background: C.base } },
-        h(
-          'div',
-          { style: { minWidth: 0 } },
-          h('h1', { className: 'mn-title', style: { fontSize: 19, fontWeight: 650, margin: 0, color: C.text } }, t('title')),
-          h('div', { className: 'mn-sub', style: { fontSize: 12, marginTop: 2, color: C.dim } }, t('subtitle')),
-        ),
-        h(
-          'div',
-          { className: 'mn-head-right', style: { marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' } },
-          h(LangToggle, null),
-          chain.ok
-            ? h('span', { className: 'mn-chip mn-ok' }, `${t('chain_ok')} · ${chain.count ?? 0} ${t('records')}`)
-            : chain.sealed
-              ? h('span', { className: 'mn-chip mn-warn' }, `${t('chain_sealed')} · #${(chain.brokenAt ?? 0) + 1}`)
-              : h('span', { className: 'mn-chip mn-err' }, `${t('chain_bad')} · #${(chain.brokenAt ?? 0) + 1}`),
-          pending.length ? h('span', { className: 'mn-chip mn-warn' }, `${t('pending')} · ${pending.length}`) : null,
-          h(
-            'div',
-            { className: 'mn-inline' },
-            h('span', { className: 'mn-hint' }, t('master')),
-            h(
-              'button',
-              {
-                type: 'button',
-                className: 'mn-sw',
-                role: 'switch',
-                'aria-checked': cfg.enabled ? 'true' : 'false',
-                'aria-label': t('master'),
-                onClick: () => void post('/config', { patch: { enabled: !cfg.enabled } }),
-              },
-              h('i'),
-            ),
-          ),
-        ),
-      )
-
-      if (!state) {
-        return h(
-          'div',
-          { className: 'mn-root', style: rootStyle },
-          header,
-          h('div', { className: 'mn-body', style: bodyStyle }, error ? h('div', { className: 'mn-err', style: { color: C.err } }, `${t('error')}: ${error}`) : h('div', { className: 'mn-empty', style: { color: C.dim } }, '…')),
-        )
-      }
-
-      const mapSection = h(
-        Section,
-        { title: t('star_map'), hint: t('star_hint') },
-        h(Constellation, { galaxy: state.galaxy, coreLabel: t('core'), dimLabel }),
-        h(
-          'div',
-          { className: 'mn-legend' },
-          Object.keys(DIM_COLORS)
-            .filter((d) => d !== 'other')
-            .map((d) => h('span', { key: d }, h('i', { className: 'mn-dot', style: { background: DIM_COLORS[d] } }), dimLabel(d))),
-          h('span', { className: 'mn-hint' }, `${state.counts?.active ?? 0} ${t('memories')}`),
-        ),
-      )
-
-      /* ── 提示詞分層：這一輪送進模型的那段字，各塊佔多少 ── */
+            /* ── 提示詞分層：這一輪送進模型的那段字，各塊佔多少 ── */
       // 資料由 /state 的 injection 帶過來（那是量出來的真實長度，不是估的）。
       const PALETTE = {
         foundation: '#5b7cfa',
@@ -2111,43 +1775,10 @@ window.__ModuleLoader__.load({
       )
 
       const dutyInfo = state.dutyInfo || {}
-      const bili = state.bili || {}
-      const biliLabels = {
-        perDay: t('bili_perDay'),
-        fetchPerRound: t('bili_fetchPerRound'),
-        searchPages: t('bili_searchPages'),
-        searchSort: t('bili_searchSort'),
-        manualMax: t('bili_manualMax'),
-        manualCooldownMin: t('bili_manualCooldownMin'),
-        commentLength: t('bili_commentLength'),
-        keywords: t('bili_keywords'),
-        excludeWords: t('bili_excludeWords'),
-      }
-      const tuned = state.runtime?.biliTuned || {}
-      const tunedKeys = Object.keys(tuned)
       const rhythmSection = h(
         Section,
         { title: t('rhythm') },
         h(Switch, { label: t('r_reflection'), note: t('r_reflection_note'), checked: Boolean(cfg.reflection), onChange: (v) => void post('/config', { patch: { reflection: v } }) }),
-        h(Switch, { label: t('r_bili'), note: t('r_bili_note2'), checked: Boolean(cfg.bili), onChange: (v) => void post('/config', { patch: { bili: v } }) }),
-        h('div', { className: 'mn-hint', style: { margin: '2px 0 10px', paddingLeft: 2 } }, `${t('bili_note')} · ${(biliS || bili).installed ? t('bili_mounted') : t('bili_missing')}`),
-        cfg.bili
-          ? h(
-              'div',
-              { style: { marginBottom: 10 } },
-              h('div', { className: 'mn-lbl', style: { marginTop: 4 } }, t('bili_settings')),
-              h('div', { className: 'mn-hint', style: { marginBottom: 6 } }, t('bili_tuned')),
-              tunedKeys.length === 0
-                ? h('div', { className: 'mn-empty' }, t('bili_never'))
-                : h(
-                    'div',
-                    { className: 'mn-inline' },
-                    tunedKeys.map((k) =>
-                      h('span', { key: k, className: 'mn-chip' }, `${biliLabels[k] || k} = ${Array.isArray(tuned[k]) ? tuned[k].join('/') : String(tuned[k])}`),
-                    ),
-                  ),
-            )
-          : null,
         h(Switch, { label: t('r_valley'), note: t('r_valley_note'), checked: Boolean(cfg.valleyOnly), onChange: (v) => void post('/config', { patch: { valleyOnly: v } }) }),
         h(
           'div',
@@ -2155,7 +1786,6 @@ window.__ModuleLoader__.load({
           // 這些 min/max 必須跟 lib/model.js 的 INJECT_TUNABLES / RHYTHM_TUNABLES 一致。
           // 不然頁面允許填 240 小時，saveConfig 卻把它夾到 72 —— 用戶以為設成功了，其實沒有。
           h(Num, { label: t('n_reflect_h'), value: cfg.reflectionEveryHours, min: 6, max: 72, onCommit: (v) => void post('/config', { patch: { reflectionEveryHours: v } }) }),
-          h(Num, { label: t('n_bili_h'), value: cfg.biliEveryHours, min: 6, max: 72, onCommit: (v) => void post('/config', { patch: { biliEveryHours: v } }) }),
           h(Num, { label: t('n_daily'), value: cfg.dutyMaxPerDay, min: 1, max: 4, onCommit: (v) => void post('/config', { patch: { dutyMaxPerDay: v } }) }),
           // 條數不再手動調：它由 injectBudget 推導（每 50 字一個位置），所以這裡只顯示推導結果。
           h('div', { className: 'mn-hint' }, `${t('n_slots')} ${state.derivedSlots ?? Math.floor((cfg.injectBudget || 0) / 50)}`),
@@ -2167,7 +1797,6 @@ window.__ModuleLoader__.load({
           { className: 'mn-inline', style: { marginTop: 10 } },
           dutyInfo.valley?.ok ? h('span', { className: 'mn-chip mn-ok' }, `${t('valley_now')} · ${dutyInfo.valley.label}`) : h('span', { className: 'mn-chip' }, t('valley_no')),
           h('span', { className: 'mn-hint' }, `${t('last_reflect')} ${ago(state.runtime?.lastReflectionAt, t)}`),
-          h('span', { className: 'mn-hint' }, `${t('last_bili')} ${ago(state.runtime?.lastBiliAt, t)}`),
           h('span', { className: 'mn-hint' }, `${t('duties_today')} ${dutyInfo.dutiesToday ?? 0}`),
           state.runtime?.armed ? h('span', { className: 'mn-chip mn-warn' }, t('armed_badge', { kinds: kindText(state.runtime.armed.kinds, t) || '—' })) : null,
         ),
@@ -2204,31 +1833,6 @@ window.__ModuleLoader__.load({
                 ),
             )
           : null,
-      )
-
-      const accountSection = h(
-        Section,
-        { title: t('bili_account'), hint: biliS ? (biliS.loggedIn ? t('bili_logged_in') : t('bili_logged_out')) : '…' },
-        h(
-          'div',
-          { className: 'mn-inline', style: { marginBottom: 8 } },
-          biliS?.loggedIn ? h('span', { className: 'mn-done mn-ok' }, `● ${t('bili_logged_in')}`) : h('span', { className: 'mn-done mn-warn' }, `○ ${t('bili_logged_out')}`),
-          biliS?.ownerInfo?.uname ? h('span', { className: 'mn-chip' }, `${biliS.ownerInfo.uname}${biliS.ownerInfo.mid ? ` · ${biliS.ownerInfo.mid}` : ''}`) : null,
-          biliS && biliS.missingDeps && biliS.missingDeps.length ? h('span', { className: 'mn-chip mn-warn' }, t('missing_deps', { list: biliS.missingDeps.join(' / ') })) : null,
-          h('button', { type: 'button', className: 'mn-btn mn-btn-p', style: qr !== null ? btnDisabled : btnPrimary, onClick: () => void startLogin(), disabled: qr !== null }, t('bili_login')),
-        ),
-        qr ? h('img', { className: 'mn-qr', src: qr.src, alt: t('bili_login') }) : null,
-        qr ? h('div', { className: 'mn-hint' }, t('bili_scan_hint')) : null,
-        loginMsg ? h('div', { className: 'mn-note' }, loginMsg) : null,
-        h(
-          'div',
-          { className: 'mn-kv', style: { marginTop: 8 } },
-          h('span', null, t('bili_account_id')),
-          h('span', { className: 'mn-code' }, biliS?.cred?.uid || t('none')),
-          h('span', null, t('bili_login_at')),
-          h('span', null, biliS?.cred?.loggedAt ? new Date(biliS.cred.loggedAt).toLocaleString() : biliS?.cred ? t('none') : t('bili_cred_missing')),
-        ),
-        h('div', { className: 'mn-hint', style: { marginTop: 4 } }, t('bili_cred_note')),
       )
 
       const safetySection = h(
@@ -2358,133 +1962,11 @@ window.__ModuleLoader__.load({
           selfSection,
           h('div', { className: 'mn-grid2' }, dimsSection),
           rhythmSection,
-          accountSection,
           safetySection,
         ),
       )
     }
 
-    /* ───────────────────────── 刷B站設定頁上的橫幅 ───────────────────────── */
-
-    /* Silt 現在的持倉（總開關 + B站許可），給刷B站那頁的橫幅用 */
-    const holdState = { current: null }
-    let bannerMounted = false
-    let bannerTimer = 0
-
-    const unmountBanner = () => {
-      if (!bannerMounted) return
-      try {
-        window.__DSH_SLOT_MOUNT__?.('Silt', null)
-      } catch {
-        /* 卸不掉就算了，橫幅自己會收起來 */
-      }
-      bannerMounted = false
-    }
-
-    /**
-     * 把橫幅掛進刷B站設定頁（用 BiliBanner）。插在哪、要不要插全由 Silt 決定：
-     * 只認它給的 `data-Silt-slot` 標記，不讀它別的 DOM。
-     */
-    function syncBanner() {
-      try {
-        unmountBanner()
-        const host = document.querySelector('[data-Silt-slot]')
-        if (!host) return
-        const api = window.__DSH_SLOT_MOUNT__
-        if (typeof api !== 'function') return
-        api('Silt', host, h(BiliBanner, { hold: holdState.current }))
-        bannerMounted = true
-      } catch {
-        /* 宿主換了掛載方式就不插橫幅，頁面其他部分照常 */
-      }
-    }
-
-    function BiliBanner(props) {
-      const [st, setSt] = useState(null)
-      useLang()
-      useEffect(() => {
-        let alive = true
-        const tick = () => {
-          fetch(`${API}/bili`, { headers: { accept: 'application/json' }, credentials: 'same-origin' })
-            .then((r) => (r.ok ? r.json() : null))
-            .then((j) => {
-              if (alive && j?.ok) setSt(j)
-            })
-            .catch(() => {})
-        }
-        tick()
-        const timer = window.setInterval(tick, 15000)
-        return () => {
-          alive = false
-          window.clearInterval(timer)
-        }
-      }, [])
-      const hold = props?.hold
-      if (!st || !hold) return null
-      const stance = hold.bili ? (hold.enabled ? tt('bili_hold_yes') : tt('bili_hold_always')) : tt('bili_hold_no')
-      return h(
-        'div',
-        {
-          className: 'mn-inline-note',
-          'data-Silt-banner': '1',
-          style: { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '6px 0 2px', fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)' },
-        },
-        h('span', null, `${tt('bili_banner')}：${stance}`),
-        h(
-          'button',
-          {
-            type: 'button',
-            style: {
-              font: 'inherit',
-              fontSize: 12,
-              padding: '2px 9px',
-              borderRadius: 8,
-              border: '1px dashed var(--dsw-alias-border-l2)',
-              background: 'transparent',
-              color: 'var(--dsw-alias-label-secondary)',
-              cursor: 'pointer',
-            },
-            onClick: () => {
-              try {
-                window.__DSH_LAYOUT__?.selectPanel?.('Silt')
-              } catch {
-                /* 導航失敗就留在他原本那一頁 */
-              }
-            },
-          },
-          tt('bili_banner_go'),
-        ),
-      )
-    }
-
-    /* ───────────────────────── 側欄圖示 ───────────────────────── */
-
-    function Glyph(props) {
-      const size = Math.max(12, Math.min(40, props?.size || 18))
-      const active = Boolean(props?.active)
-      return h(
-        'svg',
-        { width: size, height: size, viewBox: '0 0 24 24', 'aria-hidden': true, style: { display: 'block' } },
-        h('circle', { cx: 12, cy: 12, r: 2.4, fill: 'currentColor', opacity: active ? 1 : 0.9 }),
-        h(
-          'g',
-          { stroke: 'currentColor', strokeWidth: 0.9, opacity: active ? 0.85 : 0.55, fill: 'none' },
-          h('path', { d: 'M6.5 6.5 L12 12 L18 6.5' }),
-          h('path', { d: 'M12 12 L8 18.5' }),
-          h('path', { d: 'M12 12 L16.5 18' }),
-        ),
-        h(
-          'g',
-          { fill: 'currentColor' },
-          h('circle', { cx: 6.5, cy: 6.5, r: 1.35 }),
-          h('circle', { cx: 18, cy: 6.5, r: 1.15 }),
-          h('circle', { cx: 8, cy: 18.5, r: 1 }),
-          h('circle', { cx: 16.5, cy: 18, r: 1.25 }),
-        ),
-      )
-    }
-
-    /* ───────────────────────── 註冊 ───────────────────────── */
 
     return {
       inject: ['slots'],

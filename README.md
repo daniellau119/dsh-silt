@@ -353,7 +353,6 @@ hash = sha256({v, seq, ts, kind, actor, payload, prev})
 | `silt_duty` | 查/調自己的節律 |
 | `silt_inject` | 查/調注入量 |
 | `silt_unseen` | 翻那些擠不進提示詞的標題 |
-| `silt_bili` | 刷 B站參數 |
 | `silt_archive` | 驗哈希鏈 |
 
 模型沒有的：**刪除、改寫、回滾、匯入、設定總開關**。這些只有本人能碰。
@@ -381,7 +380,6 @@ hash = sha256({v, seq, ts, kind, actor, payload, prev})
 | `injectBudget` | 1800 | 600–3200 | 注入字數預算 —— 真正該調的是它 |
 | `injectCount` | 12 | 1–64 | ⚠️ 已不生效：條數由預算 ÷ 50 推導 |
 | `reflectionEveryHours` | 24 | 6–72 | 多久反思一次 |
-| `biliEveryHours` | 20 | 6–72 | 多久刷一次 B 站 |
 | `dutyMaxPerDay` | 2 | 1–4 | 每天最多幾輪值守 |
 | `tier4TtlDays` | 30 | 0–90 | 暫存區保留天數（0 = 不過期） |
 
@@ -421,7 +419,7 @@ hash = sha256({v, seq, ts, kind, actor, payload, prev})
 ## 谷時值守
 
 落在 DeepSeek 優惠時段（中午 12–14、晚間 18–次日 9，週末全天）而且有事到期時，
-排一輪自主任務 —— 一個新會話，它自己決定要不要整理記憶、刷 B站、改自己。
+排一輪自主任務 —— 一個新會話，它自己決定要不要整理記憶、改自己。
 
 **「不需要改」是有效決策。**
 

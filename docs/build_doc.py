@@ -722,7 +722,7 @@ P('只有落在谷時、而且確實有事到期，才會起一輪值守。起�
 
 doc.add_heading('13.2　到期判斷', level=2)
 code('reflection: 開了反思 且 有東西可整理 且 距上次 ≥ reflectionEveryHours\n'
-     'bili:       開了B站  且 距上次 ≥ biliEveryHours\n'
+     '（B站 那一輪已於 2026-11-25 移除）\n'
      '另外還要有：在谷時 且 今日輪數 < dutyMaxPerDay')
 
 P('「有東西可整理」＝ 記憶非空，或性格卡已長出 traits/taste。'
@@ -734,22 +734,21 @@ table(
     ['節', '標題', '內容'],
     [
         ['開頭', '【自我整理】', '這一輪不是聊天，是你獨處整理。按順序執行；沒必要就不要動。不要捏造。'],
-        ['1', '狀態與節律', 'silt_duty 看狀態；覺得不合適就 tune 反思/B站/每日輪數'],
+        ['1', '狀態與節律', 'silt_duty 看狀態；覺得不合適就 tune 反思間隔 / 每日輪數'],
         ['2', '舊記憶壓縮', '有清單時展開：保留什麼、刪去什麼、怎麼提交；沒有時寫「這一輪沒有需要壓縮的記憶，略過。」'],
         ['3', '暫存區', 'silt_recall tier:4 帶 confidence: 0 掃一遍；在意的用 deliberate 再翻，並按份量給 confidence'],
         ['4', '記憶配額', 'silt_inject 看預算，覺得不合適就 tune injectBudget'],
         ['5', '自我與性格', 'op:"self" 寫自我認知（3–5 句、≤350 字）；修訂性格卡（整張 ≤350 字）'],
         ['6', '未來的約定', '想到「還沒發生、有期限」的事就寫 T5，帶 expiresAt'],
         ['7', '對本人了解', 'silt_recall 讀完之後，silt_understanding op:"set" 給六維打分'],
-        ['8', '底線', '技術內容不入記憶、不捏造、B站權限範圍、刪除回滾屬本人'],
+        ['8', '底線', '技術內容不入記憶、不捏造、刪除回滾屬本人'],
         ['9', '收尾', '結尾用兩三句交代做了什麼或為什麼不做'],
     ],
     widths=[1.3, 3.0, 12.2],
 )
 
-P('B站那一段是獨立的一節【出門看看：B站漫遊】，不編進【自我整理】的編號。'
-  '它只在 B站 到期時出現，排在【自我整理】後面。內容依序是：可以怎麼逛（先搜再讀，bili_run 放最後）、'
-  '瀏覽口味（silt_bili status / tune）、留下觸動（只記真正打動你的）。')
+P('（2026-11-25 本人把 B站 那一轮整条移出 silt —— 它改由刷B站插件自己的 duty.md 负责，'
+  'silt 这边只剩【自我整理】一节。原来那节【出门看看：B站漫游】连同 bili.js / silt_bili 一起删掉了。）')
 
 doc.add_heading('13.4　壓縮清單怎麼塞進任務書', level=2)
 P('arm() 在排任務之前先算 condensePlan()，把結果直接寫進【舊記憶壓縮】第 2 節：')
@@ -771,8 +770,7 @@ table(
         ['silt_speak', 'read / say / defer', '主動找本人說話：read 看狀態，say 真的開口，defer 想說但決定先不說'],
         ['silt_archive', 'verify', '驗雜湊鏈'],
         ['silt_understanding', 'read / set', '六維打分'],
-        ['silt_bili', 'status / tune', '刷B站參數（白名單 + 硬範圍）'],
-        ['silt_duty', 'read / tune', '節律（反思間隔、B站間隔、每日輪數）'],
+                ['silt_duty', 'read / tune', '節律（反思間隔、每日輪數）'],
         ['silt_inject', 'read / tune', '注入字數預算（條數由它推導）'],
     ],
     widths=[3.4, 4.6, 8.5],
@@ -790,8 +788,7 @@ table(
         ['injectBudget', '1800', '600–3200', '注入字數預算 —— 真正該調的是它'],
         ['injectCount', '12', '1–64', '⚠️ 已不生效：條數由 injectBudget / 50 推導'],
         ['reflectionEveryHours', '24', '6–72', '多久反思一次'],
-        ['biliEveryHours', '20', '6–72', '多久刷一次 B站'],
-        ['dutyMaxPerDay', '2', '1–4', '每天最多幾輪'],
+                ['dutyMaxPerDay', '2', '1–4', '每天最多幾輪'],
         ['tier4TtlDays', '30', '0–90', 'T4 保留天數（0 = 不過期）'],
     ],
     widths=[4.4, 1.6, 2.2, 8.3],
@@ -800,9 +797,6 @@ table(
 P('另外兩個不走 tune、由本人掌握或由程式推導：'
   'titlesOnly（只放標題，預設開）在設定檔裡；注入位置數 = floor(injectBudget / 50)，不開放調。', size=9.5)
 
-P('刷B站那組另有白名單（perDay、fetchPerRound、searchPages、searchSort、manualMax、'
-  'manualCooldownMin、commentLength、keywords、excludeWords），各自帶硬範圍。'
-  '不進白名單的一律由本人掌握：帳號與登入、私信收件人、自動評論、發送對象、工作日誌、模型。', size=9.5)
 
 # ═══════════════════════════════ 15 常數 ═══════════════════════════════
 doc.add_heading('16　常數速查', level=1)
@@ -860,7 +854,7 @@ P('每一拍做的事：')
 code('store.verify()          ← 每 2 拍才做一次\n'
      'expireStalePendings()   ← 待確認超過 7 天就標成 expired\n'
      'settle()                ← 上一輪值守排程收尾\n'
-     'computeDue()            ← 反思 / B站 到期了嗎\n'
+     'computeDue()            ← 反思 到期了嗎\n'
      'inValley()              ← 現在是谷時嗎\n'
      'dutiesToday()           ← 今天跑夠了嗎\n'
      'arm()                   ← 都過了才起一輪')
