@@ -29,6 +29,8 @@ window.__ModuleLoader__.load({
       en: {
         nav: 'Silt',
         title: 'Silt',
+        portrait_missing: 'No portrait yet — drop portrait.jpg into the Silt home folder',
+        portrait_missing_hint: 'This card is square and always as tall as the persona card beside it',
         subtitle: 'memory, persona and taste that grow across sessions',
 
         master: 'Enabled',
@@ -205,6 +207,8 @@ window.__ModuleLoader__.load({
       zh: {
         nav: 'Silt',
         title: 'Silt',
+        portrait_missing: '還沒有形象照 —— 放一張 portrait.jpg 到 silt 家目錄',
+        portrait_missing_hint: '這張卡是正方形，高度跟旁邊那張性格卡一樣',
         subtitle: '跨會話長出來的記憶、性格與喜好',
 
         master: '啟用',
@@ -1352,19 +1356,65 @@ window.__ModuleLoader__.load({
       }, [portraitV])
 
       // 2026-11-22：形象照不再塞在標題那行（太小），改成跟性格卡一左一右擺在星圖上方。
-      // 沒有 portrait.jpg 就整塊不出現 —— 不留一個空框。
+      //
+      // ⚠️ 2026-11-25 本人改：**沒有圖也要留位置**（原本是整塊不出現）。
+      //    理由：這張卡要跟性格卡並排、高度齊平、比例 1:1，
+      //    沒有圖就整塊消失會讓版面每次載入都在跳 —— 而且看不出「這裡本來該有一張」。
+      //    現在沒有圖就畫一個佔位框（虛線邊、一句提示），位置和比例跟有圖時完全一樣。
+      //
+      //    ⚠️ 圖片來源目前**不變**：仍然是 silt 家目錄下的 portrait.(jpg|jpeg|png|webp)，
+      //    由本機檔案提供。模型「反思時自行決定要不要換圖」這件事**這輪沒有做**
+      //    （本人指示：只在 UI 留一個位置，其他都不動）。
+      const portraitCardStyle = {
+        borderRadius: 14,
+        overflow: 'hidden',
+        border: `1px solid ${C.border1}`,
+        background: C.base,
+        // ⭐ 1:1，而且高度跟右邊那張性格卡一樣高。
+        //    靠三件事一起做到：
+        //      ① 外層 grid 兩欄都 align-self: stretch ⇒ 兩欄高度相等
+        //      ② 這張卡 height: 100% ⇒ 撐滿那一欄的高度
+        //      ③ aspect-ratio: 1/1 ⇒ 寬度由高度反推（正方形）
+        //    所以性格卡變高，這張跟著變大；反之亦然。
+        height: '100%',
+        aspectRatio: '1 / 1',
+        boxSizing: 'border-box',
+        position: 'relative',
+      }
       const portraitSection =
         portraitOk === true
           ? h(
               'div',
-              { className: 'mn-portrait-card', style: { borderRadius: 14, overflow: 'hidden', border: `1px solid ${C.border1}`, background: C.base } },
+              { className: 'mn-portrait-card', style: portraitCardStyle },
               h('img', {
                 src: `${API}/portrait?t=${portraitV}`,
                 alt: t('title'),
-                style: { display: 'block', width: '100%', height: '100%', minHeight: 360, objectFit: 'cover', objectPosition: '50% 20%' },
+                style: { display: 'block', width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 20%' },
               }),
             )
-          : null
+          : h(
+              'div',
+              {
+                className: 'mn-portrait-card mn-portrait-empty',
+                title: t('portrait_missing_hint'),
+                style: {
+                  ...portraitCardStyle,
+                  borderStyle: 'dashed',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  padding: 16,
+                  textAlign: 'center',
+                  color: C.dim,
+                  fontSize: 12,
+                  lineHeight: 1.6,
+                },
+              },
+              h('div', { style: { fontSize: 26, opacity: 0.35, lineHeight: 1 } }, '◌'),
+              h('div', null, t('portrait_missing')),
+            )
 
       const header = h(
         'header',
@@ -2122,19 +2172,27 @@ window.__ModuleLoader__.load({
           error ? h('div', { className: 'mn-err', style: { color: C.err } }, `${t('error')}: ${error}`) : null,
           note ? h('div', { className: 'mn-note', style: { fontSize: 12, color: C.dim } }, note) : null,
           // 形象照（左）＋ 性格卡（右）—— 2026-11-22 他要置頂，擺在星圖之前
-          portraitSection || personaSection
-            ? h(
-                'div',
-                {
-                  className: 'mn-portrait-row',
-                  style: portraitSection
-                    ? { display: 'grid', gridTemplateColumns: 'minmax(280px, 420px) 1fr', gap: 16, alignItems: 'stretch', marginBottom: 16 }
-                    : { marginBottom: 16 },
-                },
-                portraitSection,
-                personaSection,
-              )
-            : null,
+          //
+          // ⭐ 2026-11-25：**左邊正方形，邊長 = 右邊那張性格卡的高度。**
+          //    外層 grid 兩欄 `align-items: stretch`（預設）⇒ 等高；
+          //    左邊那張 height: 100% + aspect-ratio: 1/1 ⇒ 寬度由高度反推。
+          //    左欄宣告成 `auto`，讓它由內容（那張正方形卡）決定寬度，
+          //    右欄 1fr 吃掉剩下的。
+          h(
+            'div',
+            {
+              className: 'mn-portrait-row',
+              style: {
+                display: 'grid',
+                gridTemplateColumns: 'auto 1fr',
+                gap: 16,
+                alignItems: 'stretch',
+                marginBottom: 16,
+              },
+            },
+            portraitSection,
+            personaSection,
+          ),
           mapSection,
           injSection,
           digestSection,
