@@ -7,8 +7,9 @@
  *   1. **記憶與人格的檔案**（`<DSH_HOME>/silt/ledger.jsonl`）：append-only、每筆帶
  *      sha256 串起的 `prev`/`hash`，記憶 / 人格 / 結構的改寫一律留 before/after 快照，
  *      可按快照 id 回滾。刪除、覆蓋、回滾、導入這一類不可逆動作只可以由本人確認。
- *   2. **注入**：把「現在的自己 + 仍記得的 + 還不明白的」壓成一段系統提示，每個會話都看得到。
- *   3. **七隻手**：silt_recall / remember / revise / shape / persona / archive / duty。
+ *   2. **注入**：把「現在的自己 + 仍記得的」壓成一段系統提示，每個會話都看得到。
+ *   3. **工具**：recall / unseen / remember / void / condense / persona / archive /
+ *      understanding / duty / inject / speak（見 lib/tools.js）。
  *   4. **谷時值守**：落在 DeepSeek 優惠時段才排一輪自主任務，交給 Harness 自己開會話去決定
  *      「要不要整理、要不要改自己」—— 決定不做也是有效決策。
  *
@@ -67,27 +68,17 @@ function resolveHome(ctx) {
 }
 
 /**
- * 這一輪是不是「本人」推的。
+ * 這一輪是不是「本人」推的 —— **不再由插件自己猜**。
  *
- * 排程投遞（值守、主動開口）開的輪次同樣會讓系統提示求值，但那不是他在，
- * 不能拿來當「他正在用」的證據 —— 否則她會把自己發出去的訊息誤當成自己的回話，
- * 冷卻永遠重置不完。認得出就排除，認不出（拿不到 agent）就當作是。
+ * 2026-11-26 移除：舊版用 `ctx.get('agents')?.currentSession?.()?.messages`
+ * 判斷，但 `agents` 是 AgentRegistry，服務契約上沒有 `currentSession()`；
+ * Session 也沒有 `.messages`（它是 deriveMessages()）。探測永遠落空 ⇒ 永遠回 true，
+ * 於是排程投遞也被當成本人，剛說出去的話立刻被記成「他回了」。
+ *
+ * 現在唯一可信的來源是宿主的 `api-session/activity`：它在
+ * `event.type === 'user/message' && event.data.source.kind === 'user'` 時才發，
+ * 排程投遞（source.kind === 'schedule'）不會觸發。見下面 apply() 的 listener。
  */
-function hasHumanTurn(ctx) {
-  try {
-    const agent = ctx.get?.('agents')
-    const msgs = agent?.currentSession?.()?.messages
-    if (!Array.isArray(msgs)) return true
-    for (let i = msgs.length - 1; i >= 0; i -= 1) {
-      const m = msgs[i]
-      if (m?.role !== 'user') continue
-      return m?.source?.kind !== 'schedule'
-    }
-  } catch {
-    /* 拿不到就當作是本人 —— 寧可多算一次，也不要她把自己的訊息當成回話 */
-  }
-  return true
-}
 
 export function apply(ctx, config) {
   const home = resolveHome(ctx)
@@ -104,11 +95,14 @@ export function apply(ctx, config) {
   store.load()
   const duty = makeDuty({ ctx, store, log })
   store.duty = duty.info()
+  // 工具讀狀態時要拿「現在」的，不是啟動那一拍的快照。store.duty 只在 tick 時更新，
+  // 模型在尖峰/谷時邊界看到的會是舊的（valley / due 可能差上一拍）。
+  store.dutyInfo = () => duty.info()
   // 谷時判斷只留在 duty 一處（跟值守同一組窗口）——
   // store 要用的時候向這裡拿，兩邊不會各有一套說法。
   store.valleyOf = (now) => inValley(now)
   
-  /* ── 七隻手 ── */
+  /* ── 工具 ── */
   let toolCount = 0
   try {
     for (const definition of buildTools(store, { speak: (req) => duty.speak(req) })) {
@@ -128,9 +122,9 @@ export function apply(ctx, config) {
           order: 850,
           text: () => {
             try {
-              // humanTurn: 只有人的訊息在推這一輪時才算「他在」。
-              // 排程投遞（值守 / 主動開口）同樣會開一輪，但那不是他 —— 用 source 分辨。
-              return store.injectionText({ humanTurn: hasHumanTurn(ctx) })
+              // 「這一輪是不是人推的」不在這裡判斷 —— 它由下面的
+              // api-session/activity 事件寫進 store.noteHumanTurn()。
+              return store.injectionText()
             } catch (err) {
               return ''
             }
@@ -151,12 +145,17 @@ export function apply(ctx, config) {
     log(`HTTP 路由掛不上：${err?.message || err}`)
   }
 
-  /* ── 「本人最後親手說話的會話」 ──
+  /* ── 「本人最後親手說話的會話」與「他回話了」 ──
    * 日記和反思寫在這裡，不另開一個房間自言自語。
    *
    * 只有 `api-session/activity` 算數：它在 session-controller 裡的判據是
    *   event.type === 'user/message' && event.data.source.kind === 'user'
    * 排程投遞、agent 自己寫的、工具結果全被排除 —— 只有本人敲的那句話推進這個會話。
+   *
+   * 2026-11-26：**speak.ack 也接在這條**。舊版靠提示詞組裝時的
+   * `hasHumanTurn` 判斷，但那個探測在這版 DSH 上永遠回 true，於是排程投遞
+   * 一組裝提示詞，就把她剛說出去的話記成本人回話。api-session/activity
+   * 只為 source.kind === 'user' 發，正好是「他親手敲的」。
    *
    * 不掛在 `session/event` 上是刻意的：那條是所有事件，得自己再篩一遍，
    * 篩錯了就會把自己發出去的東西當成他說的。
@@ -166,6 +165,7 @@ export function apply(ctx, config) {
       () =>
         ctx.on('api-session/activity', (sessionId, updatedAt) => {
           store.noteHomeSession(sessionId, updatedAt)
+          store.noteHumanTurn({ sessionId, source: 'activity' })
         }),
       'silt: home session',
     )
@@ -174,35 +174,58 @@ export function apply(ctx, config) {
   }
 
   /* ── 谷時值守心跳 ──
-   * 60 分鐘一拍（原本 120 秒）。
+   * 2026-11-26 本人：改成「對齊下一個固定反思鐘點」。
    *
-   * 為什麼敢放到這麼鬆：這個心跳要做的判斷全是「日級」的 ——
-   * 反省到期 6–72 小時、待確認 7 天過期。
-   * 60 分鐘的粒度對這些節律完全夠，而每一拍都要寫一次 runtime.json（lastTickAt），
-   * 120 秒等於一天寫 720 次，純粹是白寫。
-   *
-   * 唯一對延遲敏感的是 settle()（上一輪值守排程收尾），但它真的不要緊：
-   *   最壞情況只是「armed 還指著上一輪 ⇒ 這段時間不會起新值守」，
-   *   而 settle() 自己有保底 —— 超過 60 分鐘一律放掉，不管排程有沒有真的結束。
-   *   起一輪值守的節律本來就是「一天一兩次」，多等一小時看不出來。
+   * 不再是 60 分鐘的固定 interval，而是一個單次 timer：
+   *   · 有固定鐘點 → 下一次鐘點 +1 秒（留 1 秒讓 lastReflectionSlot 認得出它已過）；
+   *   · 沒固定鐘點 → 下一次「上次反省 + 間隔」；
+   *   · 上限 60 分鐘 —— 不管下一個鐘點多遠，至少每小時做 settle / 驗鏈 / 過期清理。
+   * 每次 tick 完重排下一個；/config 改鐘點時 routes 會叫 store.dutyWake() 立即重排。
    */
-  const DUTY_TICK_MS = 60 * 60_000
+  const DUTY_TICK_MS = 60 * 60_000 // 家務上限，也是 nextWakeAt 失效時的 fallback
   try {
     ctx.effect(() => {
       let alive = true
-      const beat = () => {
+      let timer = null
+      const beat = async () => {
         if (!alive) return
-        duty.tick().catch((err) => log(`值守心跳出錯：${err?.message || err}`))
+        try {
+          await duty.tick()
+        } catch (err) {
+          log(`值守心跳出錯：${err?.message || err}`)
+        }
+        if (alive) schedule()
       }
-      const timer = setInterval(beat, DUTY_TICK_MS)
-      timer.unref?.()
-      // 開機後 8 秒補一拍：這個 timer 也要收得回來，否則插件卸載後它還會再叫一次
+      const schedule = () => {
+        if (!alive) return
+        if (timer) {
+          clearTimeout(timer)
+          timer = null
+        }
+        const now = Date.now()
+        let at = now + DUTY_TICK_MS
+        try {
+          const next = duty.nextWakeAt(now)
+          if (Number.isFinite(next)) at = next
+        } catch {
+          /* 算不出來就用 60 分鐘 fallback */
+        }
+        const delay = Math.max(1000, Math.min(at, now + DUTY_TICK_MS) - now)
+        timer = setTimeout(beat, delay)
+        timer.unref?.()
+      }
+      // 改設定（尤其 reflectionAt）之後不用等下一個鐘點
+      store.dutyWake = () => {
+        if (alive) schedule()
+      }
+      // 開機後 8 秒先補一拍（settle / 驗鏈 / 過期清理），之後才對齊
       const boot = setTimeout(beat, 8000)
       boot.unref?.()
       return () => {
         alive = false
-        clearInterval(timer)
+        if (timer) clearTimeout(timer)
         clearTimeout(boot)
+        store.dutyWake = null
       }
     }, 'silt: duty tick')
   } catch (err) {

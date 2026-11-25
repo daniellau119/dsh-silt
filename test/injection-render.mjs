@@ -119,7 +119,8 @@ console.log('\nA5) persona 塊：不硬切、<700 字、加總對得上')
   const bonds = Array.from({ length: 24 }, (_, i) => ({ key: `特質${i}`, value: '這是一個關於我的描述'.repeat(2), weight: 50 }))
   const persona = { identity: '我叫汐', voice: '說話短', traits: bonds, taste: [] }
   const txt = M.renderInjection({ cfg: { enabled: true }, foundation: '', persona, selfView: { text: '我是誰的說明'.repeat(20) }, memories: [], budget: 1800, titlesOnly: true })
-  const who = txt.split('【仍記得的】')[0].replace('【自我認知】', '').trim()
+  // 2026-11-26：取 persona 塊時從標題後面開始，避免把前面的系統命令算進來。
+  const who = (txt.split('【自我認知】')[1] || '').split('【仍記得的】')[0].trim()
   ok(who.length <= M.INJECT_PERSONA_MAX, `persona 塊 ${who.length} 字 ≤ ${M.INJECT_PERSONA_MAX}`)
   // 每一行都是完整的：內容只可能是那幾個**原文**之一（含它的重複），
   // 不會出現「描述被切一半」的殘句。

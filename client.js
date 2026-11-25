@@ -64,6 +64,16 @@ window.__ModuleLoader__.load({
         expand: 'click to read it all',
         facets_n: '{n} facets',
         session_id: 'session',
+        prompt_breakdown: 'Prompt breakdown',
+        prompt_breakdown_hint: '{used} / {budget} chars · {shown} memories shown{hint}',
+        prompt_breakdown_hidden: ' ({n} not shown)',
+        prompt_breakdown_wait: 'measuring this turn…',
+        prompt_breakdown_fail: 'Could not measure: {err}',
+        prompt_breakdown_free: '{n} chars free — measured from the real string, not an estimate',
+        digest_counts: 'T1 {t1} · T2 {t2} · T3 {t3} · T5 {t5} · misc {scratch}',
+        digest_voided: ' · voided {n}',
+        page_status: '{n} items · page {page}/{pages}',
+        scratch_empty: 'The misc bin is empty — it holds things not classified yet; anything not recalled within the T4 lifetime is dropped.',
 
         /* 自我認知 */
         self_view: 'Self-knowledge',
@@ -73,7 +83,7 @@ window.__ModuleLoader__.load({
         self_distilled: 'distilled into memory',
         ask_self: 'Start a reflection round now',
         ask_self_hint:
-          'Starts a full reflection round right now — a new session, ignores the interval, the valley window and the daily cap, and moves "last reflection" to now. That round walks its memories (recall, compress, revise), calibrates the six dimensions, may revise its persona, and asks itself "who am I". Writing nothing new is a valid outcome.',
+          'Starts a full reflection round right now — in the session where you last spoke (not a new session); ignores the interval and the daily cap, and moves "last reflection" to now. If "Only during token valley hours" is on, peak hours still block it. That round walks its memories (recall, compress, revise), calibrates the six dimensions, may revise its persona, and asks itself "who am I". Writing nothing new is a valid outcome.',
         ask_self_off: 'The master switch is off, so nothing runs. Turn "Let it grow on its own" on first — it only runs while that switch is on.',
         ask_self_run: 'Starting…',
         ask_self_on: 'Queued · reflection round starting',
@@ -128,7 +138,13 @@ window.__ModuleLoader__.load({
         r_valley: 'Only during token valley hours',
         r_valley_note: 'Off = it may act at any hour (more tokens). On = only inside the discount windows 12:00–14:00 and 18:00–09:00, weekends all day.',
         n_reflect_h: 'Reflection interval (h)',
-        n_daily: 'Duties per day',
+        n_reflect_at: 'Fixed reflection times (HH:MM, comma-separated; empty = use the interval)',
+        reflect_mode_fixed: 'Current cadence: fixed times {times} — “Reflection interval” is ignored.',
+        reflect_mode_interval: 'Current cadence: every {n} hours.',
+        reflect_at_note: 'Fixed times: {times} — the interval above does not apply. Proactive messages are still blocked outside off-peak hours.',
+        reflect_cap_note: 'Fixed slots: {slots} · at most {cap} rounds a day — it only runs at those times, never adds rounds to fill the cap.',
+        reflect_cap_warn: '{slots} fixed slots but the daily cap is {cap}: only {cap} rounds will run.',
+        n_daily: 'Max rounds per day',
         n_inject: 'Memories injected',
         n_slots: 'Slots (derived from the budget):',
         n_budget: 'Injection budget (chars)',
@@ -140,7 +156,7 @@ window.__ModuleLoader__.load({
         never: 'never',
         run_now: 'Run a round now',
         run_now_hint:
-          'Runs one round right now, ignoring the due interval, the valley window and the daily cap (and moves the last-run clock to now). The kind is the one due naturally — reflection — and if none is due it falls back to a reflection round. A round may also do nothing at all, which is a valid answer.',
+          'Runs one round right now, ignoring the due interval and the daily cap (and moves the last-run clock to now). If "Only during token valley hours" is on, peak hours still block it. The kind is the one due naturally — reflection — and if none is due it falls back to a reflection round. A round may also do nothing at all, which is a valid answer.',
         run_now_locked: 'Master switch is off',
         run_now_locked_hint: 'Nothing runs while the master switch ("Let it grow on its own") is off. Turn that on first.',
         run_now_run: 'Starting…',
@@ -242,6 +258,16 @@ window.__ModuleLoader__.load({
         expand: '點一下看全文',
         facets_n: '{n} 面',
         session_id: '會話',
+        prompt_breakdown: '提示詞分層',
+        prompt_breakdown_hint: '{used} / {budget} 字 · 記住 {shown} 條{hint}',
+        prompt_breakdown_hidden: '（沒顯示 {n} 條）',
+        prompt_breakdown_wait: '等下一次讀取…',
+        prompt_breakdown_fail: '量不出來：{err}',
+        prompt_breakdown_free: '空著 {n} 字 —— 這段是量出來的真實長度，不是估的',
+        digest_counts: 'T1 {t1} · T2 {t2} · T3 {t3} · T5 {t5} · 雜項 {scratch}',
+        digest_voided: ' · 作廢 {n}',
+        page_status: '{n} 條 · 第 {page}/{pages} 頁',
+        scratch_empty: '雜項區是空的（這裡放歸不了類的先擱著的東西；T4 存活時間內沒人想起就散了）',
 
         /* 自我認知 */
         self_view: '自我認知',
@@ -251,7 +277,7 @@ window.__ModuleLoader__.load({
         self_distilled: '已提煉成記憶',
         ask_self: '現在跑一輪反省',
         ask_self_hint:
-          '馬上起一輪完整反省：另開新會話，不理間隔、不理谷時、不理每日上限，並把「上次反省」推到現在。這一輪會走記憶（召回→壓成大概→補細節）、校準六維、必要時修訂性格卡，最後問自己「我是誰」。甚麼都沒寫也是有效結果。',
+          '馬上起一輪完整反省：直接在你最後說話的會話裡跑（不另開新會話），不理間隔、不理每日上限，並把「上次反省」推到現在。若開了「只在 token 谷時動作」，尖峰時段仍然不跑。這一輪會走記憶（召回→壓成大概→補細節）、校準六維、必要時修訂性格卡，最後問自己「我是誰」。甚麼都沒寫也是有效結果。',
         ask_self_off: '總開關是關的，所以不跑。要跑先打開上面的「讓它自己長」—— 它只在總開關開著時動作。',
         ask_self_run: '正在起…',
         ask_self_on: '已排隊 · 反省這一輪馬上開始',
@@ -306,7 +332,13 @@ window.__ModuleLoader__.load({
         r_valley: '只在 token 谷時動作',
         r_valley_note: '關＝任何時間都可能動作（更花 token）；開＝只在優惠時段（12:00–14:00、18:00–次日 09:00，週末全天）。',
         n_reflect_h: '反省間隔（小時）',
-        n_daily: '每天值守次數',
+        n_reflect_at: '固定反思鐘點（HH:MM，逗號分隔；留空＝用上面的間隔）',
+        reflect_mode_fixed: '目前節律：固定鐘點 {times} ——「反省間隔」不生效。',
+        reflect_mode_interval: '目前節律：每 {n} 小時。',
+        reflect_at_note: '固定鐘點：{times} —— 上面的間隔不生效；主動訊息仍只在谷時送得出去。',
+        reflect_cap_note: '固定鐘點 {slots} 個 · 每天最多 {cap} 輪 —— 只在鐘點到時跑，不會為了湊滿上限而加跑。',
+        reflect_cap_warn: '設了 {slots} 個鐘點，但每天上限 {cap} 輪 —— 只會跑 {cap} 輪，多出的鐘點不跑。',
+        n_daily: '每天最多幾輪',
         n_inject: '注入記憶條數',
         n_slots: '注入位置（由預算推導）：',
         n_budget: '注入字數預算',
@@ -318,7 +350,7 @@ window.__ModuleLoader__.load({
         never: '還沒有',
         run_now: '現在跑一輪',
         run_now_hint:
-          '馬上跑一輪：不理到期間隔、不理谷時、不理每日上限（並把「上次」推到現在）。跑不跑看自然到期的結果 —— 就是反省；沒到期就跑一輪反省。這一輪也可能甚麼都不做，那也是有效結果。',
+          '馬上跑一輪：不理到期間隔、不理每日上限（並把「上次」推到現在）；若開了「只在 token 谷時動作」，尖峰時段仍然不跑。跑不跑看自然到期的結果 —— 就是反省；沒到期就跑一輪反省。這一輪也可能甚麼都不做，那也是有效結果。',
         run_now_locked: '總開關是關的',
         run_now_locked_hint: '總開關「讓它自己長」關著時甚麼都不會跑。要跑先打開它。',
         run_now_run: '正在起…',
@@ -763,7 +795,9 @@ window.__ModuleLoader__.load({
             className: 'mn-run',
             'data-phase': run.phase === 'idle' ? '' : run.phase,
             'aria-busy': busy ? 'true' : 'false',
-            disabled: run.phase === 'starting' || locked,
+            // ⚠️ queued 也要鎖住：舊版只鎖 starting，排隊中再按一次會建第二個排程，
+            //    而 runtime.armed 只記得新的那個 id（舊的沒人收）。
+            disabled: busy || locked,
             title: locked ? idleText : undefined,
             style: runBtnStyle(run.phase),
             onClick,
@@ -818,7 +852,7 @@ window.__ModuleLoader__.load({
         ),
       )
 
-    const Num = ({ value, onCommit, min = 0, max = 9999, label }) => {
+    const Num = ({ value, onCommit, min = 0, max = 9999, label, disabled = false }) => {
       const [draft, setDraft] = useState(String(value))
       useEffect(() => {
         setDraft(String(value))
@@ -833,11 +867,71 @@ window.__ModuleLoader__.load({
           min,
           max,
           value: draft,
+          disabled,
+          style: disabled ? { opacity: 0.45 } : undefined,
           onChange: (e) => setDraft(e.target.value),
           onBlur: () => {
+            // 清空輸入框就還原成目前值 —— 不要讓「空字串」變成 Number('') = 0。
+            // （T4 TTL 的 0 是「不過期」這個特例，手滑清空會意外讓雜項永不過期。）
+            if (String(draft).trim() === '') {
+              setDraft(String(value))
+              return
+            }
             const n = Number(draft)
             if (Number.isFinite(n) && n !== Number(value)) onCommit(n)
             else setDraft(String(value))
+          },
+        }),
+      )
+    }
+
+    /**
+     * 固定反思鐘點。留空 = 交回上面的「反省間隔」。
+     * 這是一個很樸素的逗號分隔輸入框：HH:MM, HH:MM。
+     */
+    const ClockList = ({ value, onCommit, label }) => {
+      const current = Array.isArray(value) ? value.join(', ') : ''
+      const [draft, setDraft] = useState(current)
+      useEffect(() => {
+        setDraft(current)
+      }, [current])
+      return h(
+        'div',
+        { className: 'mn-row' },
+        h('div', { className: 'mn-row-l' }, label),
+        h('input', {
+          className: 'mn-num',
+          type: 'text',
+          style: { width: 150 },
+          value: draft,
+          placeholder: '19:00, 07:00',
+          onChange: (e) => setDraft(e.target.value),
+          onBlur: () => {
+            const raw = draft.trim()
+            if (!raw) {
+              if (current) onCommit(null)
+              else setDraft('')
+              return
+            }
+            const parts = raw.split(/[,，\s]+/).filter(Boolean)
+            const norm = []
+            for (const p of parts) {
+              const m = /^(\d{1,2}):(\d{2})$/.exec(p)
+              if (!m) {
+                setDraft(current)
+                return
+              }
+              const hh = Number(m[1])
+              const mm = Number(m[2])
+              if (!(hh >= 0 && hh < 24 && mm >= 0 && mm < 60)) {
+                setDraft(current)
+                return
+              }
+              norm.push(`${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`)
+            }
+            const next = [...new Set(norm)].sort().join(', ')
+            if (next !== current) onCommit([...new Set(norm)].sort())
+            else setDraft(next)
           },
         }),
       )
@@ -1562,6 +1656,7 @@ window.__ModuleLoader__.load({
       const colorOf = (key) => {
         if (key === 'foundation') return PALETTE.foundation
         if (key === 'persona_title') return PALETTE.persona_title
+        if (key === 'persona_body') return PALETTE.self
         if (key === 'identity') return PALETTE.identity
         if (key === 'voice') return PALETTE.voice
         if (key === 'self') return PALETTE.self
@@ -1575,15 +1670,20 @@ window.__ModuleLoader__.load({
       const injSection = h(
         Section,
         {
-          title: '提示詞分層',
+          title: t('prompt_breakdown'),
           hint: inj && !inj.error
-            ? `${inj.used} / ${inj.budget} 字 · 記住 ${inj.shown} 條${inj.hidden ? `（沒顯示 ${inj.hidden} 條）` : ''}`
-            : '這一輪的字數分佈',
+            ? t('prompt_breakdown_hint', {
+                used: inj.used,
+                budget: inj.budget,
+                shown: inj.shown,
+                hint: inj.hidden ? t('prompt_breakdown_hidden', { n: inj.hidden }) : '',
+              })
+            : t('prompt_breakdown'),
         },
         inj?.error
-          ? h('div', { className: 'mn-empty' }, `量不出來：${inj.error}`)
+          ? h('div', { className: 'mn-empty' }, t('prompt_breakdown_fail', { err: inj.error }))
           : !inj
-            ? h('div', { className: 'mn-hint' }, '等下一次讀取…')
+            ? h('div', { className: 'mn-hint' }, t('prompt_breakdown_wait'))
             : h(
                 'div',
                 { style: { padding: '4px 0 2px' } },
@@ -1599,7 +1699,7 @@ window.__ModuleLoader__.load({
                   },
                   ...(() => {
                     const budget = Math.max(1, inj.budget || 1)
-                    const parts = (inj.parts || []).filter((p) => !p.key.endsWith('_line') && p.chars > 0)
+                    const parts = (inj.parts || []).filter((p) => !p.summary && !p.key.endsWith('_line') && p.chars > 0)
                     return parts.map((p, i) =>
                       h('div', {
                         key: `${p.key}-${i}`,
@@ -1617,7 +1717,7 @@ window.__ModuleLoader__.load({
                 h(
                   'div',
                   { style: { marginTop: 8, display: 'flex', flexDirection: 'column', gap: 3 } },
-                  ...((inj.parts || []).filter((p) => !p.key.endsWith('_line') && p.chars > 0).map((p, i) =>
+                  ...((inj.parts || []).filter((p) => !p.summary && !p.key.endsWith('_line') && p.chars > 0).map((p, i) =>
                     h(
                       'div',
                       { key: `${p.key}-row-${i}`, style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 } },
@@ -1630,7 +1730,7 @@ window.__ModuleLoader__.load({
                   )),
                 ),
                 h('div', { className: 'mn-hint', style: { marginTop: 6, opacity: 0.6 } },
-                  `空著 ${inj.free ?? 0} 字 —— 這段是量出來的真實長度，不是估的`),
+                  t('prompt_breakdown_free', { n: inj.free ?? 0 })),
               ),
       )
 
@@ -1639,8 +1739,13 @@ window.__ModuleLoader__.load({
         {
           title: t('memory_digest'),
           hint:
-            `T1 ${state.counts?.byTier?.[1] || 0} · T2 ${state.counts?.byTier?.[2] || 0} · T3 ${state.counts?.byTier?.[3] || 0} · ` +
-            `T5 ${state.counts?.byTier?.[5] || 0} · 雜項 ${state.counts?.scratch || 0}`,
+            t('digest_counts', {
+              t1: state.counts?.byTier?.[1] || 0,
+              t2: state.counts?.byTier?.[2] || 0,
+              t3: state.counts?.byTier?.[3] || 0,
+              t5: state.counts?.byTier?.[5] || 0,
+              scratch: state.counts?.scratch || 0,
+            }) + (state.counts?.voided ? t('digest_voided', { n: state.counts.voided }) : ''),
         },
         // 已過期的預測：提示詞裡還掛著，等本人給個結果
         dueForecasts.length
@@ -1683,10 +1788,9 @@ window.__ModuleLoader__.load({
           ),
         ),
         pageRows.length === 0
-          ? h('div', { className: 'mn-empty' }, activeTier === 4 ? '雜項區是空的（這裡放歸不了類的先擱著的東西，48 小時沒人想起就散了）' : t('empty_memory'))
+          ? h('div', { className: 'mn-empty' }, activeTier === 4 ? t('scratch_empty') : t('empty_memory'))
           : pageRows.map((m) => {
               const open = Boolean(openMem[m.id])
-              const bvid = (m.evidence || []).find?.((e) => e.bvid)?.bvid || ''
               // 作廢的整行灰掉：內容還在、查得到，但它是錯的
               const dim = m.voided ? { opacity: 0.55 } : null
               return h(
@@ -1741,7 +1845,6 @@ window.__ModuleLoader__.load({
                           (m.facets || []).length ? t('facets_n', { n: (m.facets || []).length }) : '',
                           m.bornAt ? new Date(m.bornAt).toLocaleString() : '',
                           m.evidence?.[0]?.sessionId ? `${t('session_id')} ${m.evidence[0].sessionId}` : '',
-                          bvid,
                         ]
                           .filter(Boolean)
                           .join(' · '),
@@ -1797,7 +1900,7 @@ window.__ModuleLoader__.load({
                 '›',
               ),
               h('span', { className: 'mn-hint', style: { marginLeft: 4, opacity: 0.6 } },
-                `${tierList.length} 條 · 第 ${page + 1}/${pageCount} 頁`),
+                t('page_status', { n: tierList.length, page: page + 1, pages: pageCount })),
             )
           : null,
       )
@@ -2004,23 +2107,45 @@ window.__ModuleLoader__.load({
       )
 
       const dutyInfo = state.dutyInfo || {}
+      const fixedCadence = Array.isArray(cfg.reflectionAt) && cfg.reflectionAt.length > 0
       const rhythmSection = h(
         Section,
         { title: t('rhythm') },
         h(Switch, { label: t('r_reflection'), note: t('r_reflection_note'), checked: Boolean(cfg.reflection), onChange: (v) => void post('/config', { patch: { reflection: v } }) }),
         h(Switch, { label: t('r_valley'), note: t('r_valley_note'), checked: Boolean(cfg.valleyOnly), onChange: (v) => void post('/config', { patch: { valleyOnly: v } }) }),
+        // 兩者都填時哪個為準，這裡直接寫出來 —— 不要讓使用者猜。
+        h(
+          'div',
+          { className: 'mn-hint', style: { marginTop: 6 } },
+          fixedCadence
+            ? t('reflect_mode_fixed', { times: cfg.reflectionAt.join(' / ') })
+            : t('reflect_mode_interval', { n: cfg.reflectionEveryHours }),
+        ),
         h(
           'div',
           { className: 'mn-grid2', style: { marginTop: 10 } },
           // 這些 min/max 必須跟 lib/model.js 的 INJECT_TUNABLES / RHYTHM_TUNABLES 一致。
           // 不然頁面允許填 240 小時，saveConfig 卻把它夾到 72 —— 用戶以為設成功了，其實沒有。
-          h(Num, { label: t('n_reflect_h'), value: cfg.reflectionEveryHours, min: 6, max: 72, onCommit: (v) => void post('/config', { patch: { reflectionEveryHours: v } }) }),
+          h(Num, { label: t('n_reflect_h'), value: cfg.reflectionEveryHours, min: 6, max: 72, disabled: fixedCadence, onCommit: (v) => void post('/config', { patch: { reflectionEveryHours: v } }) }),
+          h(ClockList, { label: t('n_reflect_at'), value: cfg.reflectionAt, onCommit: (v) => void post('/config', { patch: { reflectionAt: v } }) }),
           h(Num, { label: t('n_daily'), value: cfg.dutyMaxPerDay, min: 1, max: 4, onCommit: (v) => void post('/config', { patch: { dutyMaxPerDay: v } }) }),
           // 條數不再手動調：它由 injectBudget 推導（每 50 字一個位置），所以這裡只顯示推導結果。
           h('div', { className: 'mn-hint' }, `${t('n_slots')} ${state.derivedSlots ?? Math.floor((cfg.injectBudget || 0) / 50)}`),
           h(Num, { label: t('n_budget'), value: cfg.injectBudget, min: 600, max: 3200, onCommit: (v) => void post('/config', { patch: { injectBudget: v } }) }),
           h(Num, { label: t('n_ttl'), value: cfg.tier4TtlHours ?? 48, min: 0, max: 168, onCommit: (v) => void post('/config', { patch: { tier4TtlHours: v } }) }),
         ),
+        Array.isArray(cfg.reflectionAt) && cfg.reflectionAt.length
+          ? h('div', { className: 'mn-hint', style: { marginTop: 6 } }, t('reflect_at_note', { times: cfg.reflectionAt.join(' / ') }))
+          : null,
+        fixedCadence
+          ? h(
+              'div',
+              { className: 'mn-hint', style: { marginTop: 4 } },
+              cfg.reflectionAt.length > Number(cfg.dutyMaxPerDay || 2)
+                ? t('reflect_cap_warn', { slots: cfg.reflectionAt.length, cap: cfg.dutyMaxPerDay })
+                : t('reflect_cap_note', { slots: cfg.reflectionAt.length, cap: cfg.dutyMaxPerDay }),
+            )
+          : null,
         h(
           'div',
           { className: 'mn-inline', style: { marginTop: 10 } },

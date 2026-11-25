@@ -442,13 +442,22 @@ hash = sha256({v, seq, ts, kind, actor, payload, prev})
 | `memory.void` | model | 標記作廢 |
 | `persona.revise` | model | 修訂性格卡 |
 | `persona.foundation` | user | 改性格底座 |
+| `self.revise` | model | 改寫自我認知 |
 | `understanding.revise` | model | 六維打分 |
 | `inject.profile` | model | 調注入量 |
 | `rhythm.profile` | model | 調節律 |
+| `config.profile` | user | 頁面改設定（含 enabled 等） |
 | `duty.arm` | plugin | 起一輪值守 |
 | `speak.send` | model | 主動開口（真的送出去了） |
 | `speak.defer` | model | 想說但決定先不說 |
-| `speak.ack` | user | 本人回了話 |
+| `speak.pending` | model | hold：要說，但留著下次說 |
+| `speak.pendingClear` | model | release：把掛著的話拿掉 |
+| `speak.ack` | user | 本人回了話（由 `api-session/activity` 觸發） |
+| `confirm.request` | user | 排一筆需要本人點頭的舊式操作 |
+| `confirm.resolve` | user/plugin | 那筆操作被批准／拒絕／過期 |
+| `import.bundle` | user | 導入一份 JSON bundle |
+| `import.ledger` | user | 導入整本 ledger.jsonl |
+| `export` | user | 記一筆「導出過」（GET 不落） |
 | `rollback` | user | 回滾快照 |
 | `chain.repair` | user | 封存斷鏈 |
 
@@ -459,7 +468,7 @@ hash = sha256({v, seq, ts, kind, actor, payload, prev})
 ## 谷時值守
 
 落在 DeepSeek 優惠時段（中午 12–14、晚間 18–次日 9，週末全天）而且有事到期時，
-排一輪自主任務 —— 一個新會話，它自己決定要不要整理記憶、改自己。
+排一輪自主任務 —— **直接在你最後親手說話的那個會話裡跑，不另開新會話**，它自己決定要不要整理記憶、改自己。
 
 **「不需要改」是有效決策。**
 
@@ -468,19 +477,25 @@ hash = sha256({v, seq, ts, kind, actor, payload, prev})
 ```
 1 狀態與節律   2 舊記憶壓縮   3 暫存區     4 記憶配額
 4.5 重讀舊事   5 自我與性格   6 未來的約定  6.5 主動開口
-7 對本人了解   8 底線         9 收尾
+7 對本人了解   8 底線         9 收尾與來找他
 ```
 
 > 4.5 與 6.5 帶的是「怎麼做」而不是任務本身，所以只在有東西可做時才出現
 > （有值得重看的記憶、或者有話還掛著）。沒有就從 4 直接到 5。
 
+> **第 9 節不是只有收尾**：它要求用 `silt_speak` 跟他說一句（或 `defer` 寫一句為什麼不說）。所以每一輪反思都是一次「主動來找你」的機會，而不是只在自己腦子裡整理。
+
 ### 節律多快
 
-心跳 **60 分鐘**一拍（不是 2 分鐘）。理由：它要判斷的都是日級的事 ——
-反思到期 24 小時、B 站到期 20 小時、待確認 7 天過期。60 分鐘完全夠，
-而每一拍都要寫一次 `runtime.json`；120 秒等於一天寫 720 次，純粹是白寫。
+心跳現在是**單次 timer，對齊下一個固定反思鐘點（+1 秒）**；沒有固定鐘點時對齊「上次反省 + 間隔」的到期時刻。
 
-哈希鏈校驗也不是每拍都做，**每 2 拍**（約 2 小時）一次。
+它仍然有 **60 分鐘的家務上限**：不管下一個鐘點多遠，至少每小時做一次 `settle()`、驗鏈、清過期確認。改設定（尤其固定鐘點）時，路由會立刻叫 `store.dutyWake()` 重排，不用等舊 timer。
+
+所以固定鐘點是準的，不是每 60 分鐘盲拍。哈希鏈每 2 拍驗一次。
+
+要改「隔幾小時」：頁面的「固定反思鐘點」填多個谷時點（例如 `08:00, 12:00, 18:00, 22:00`），
+或留空、改用「反省間隔」（6–72 小時）。固定鐘點有值時，間隔不生效 —— 頁面會標出來。
+**主動訊息仍只在谷時送得出去**，所以固定鐘點請挑 12–14、18–次日 09 或週末。
 
 ---
 
@@ -489,6 +504,8 @@ hash = sha256({v, seq, ts, kind, actor, payload, prev})
 `silt_speak` 是唯一一條不用本人先問就能找他說話的路。
 
 **只有兩個條件：谷時、模型自己判斷。**
+
+**反思時間就是它來找你的時間**：每一輪反思的第 9 節會要求它用 `silt_speak` 說一句（或 `defer` 寫一句為什麼不說）。**整輪反思本身也跑在你最後親手說話的那個會話**（`homeSession`），不另開新會話；就算隔了很久也回那裡。只有該會話已歸檔／不存在時，這一輪才會失敗（不會偷偷開新房間）。
 
 刻意不加的，以及為什麼：
 
@@ -512,9 +529,10 @@ hash = sha256({v, seq, ts, kind, actor, payload, prev})
 1. **技術隔離** —— 代碼、路徑、配置、插件內部不入記憶。按**結構特徵**攔（` ``` ` 圍欄、`C:\…`、`npm install`、`.dsh/config.json`、`cordis` 這類），
 不按主題詞 —— 所以「她寫 Python」「他說 Docker 很煩」照樣記得，擋的是「長得像檔案系統或代碼」的東西。
 
-   三條寫入路徑都過同一道閘，不是靠提示詞勸：`silt_remember`（含 tags 與 quote）、
-   `silt_persona` 的 `self`、`silt_persona` 的 `adjust`/`replace`、`silt_import`。
-   寫了會被**直接拒絕並回報原因**，不是默默吞掉。
+   寫入路徑都過同一道閘，不是靠提示詞勸：`silt_remember`（含 tags 與 quote）、
+   `silt_persona` 的 `self` 與 `adjust`/`replace`、以及頁面的 **bundle 導入**（含 evidence 裡的原話）。
+   寫了會被**直接拒絕並回報原因**，不是默默吞掉。整本帳的導入更嚴：seq、prev、每筆 hash
+   全部要對得上，hash 不符直接拒絕——不會替你重算 hash 把竄改痕跡洗掉。
 
 2. **不可靜默抹除** —— 哈希鏈，見上一節。
 3. **不能捏造** —— 每筆記憶的證據由插件從寫入那次呼叫取得，模型給不了。

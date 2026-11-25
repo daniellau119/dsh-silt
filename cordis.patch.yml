@@ -4,14 +4,16 @@
       config:
         # 這是「第一次裝上時的初值」，不是每次啟動的強制值 —— 一旦 config.json 存在，
         # 就以 config.json 為準（見 lib/store.js load() 的優先序）。
+        # 2026-11-26：清掉已移除的 B 站欄位（bili / biliEveryHours），
+        # 並把 tier4TtlDays: 30 換成現行的 tier4TtlHours: 48
+        # （舊欄位會被 load 換算成 720 小時再夾成 168，新裝第一週就變成七天期）。
         enabled: false
-        bili: false
         reflection: true
         valleyOnly: true
         injectCount: 12
-        injectBudget: 2000
+        injectBudget: 1800
         titlesOnly: true
-        tier4TtlDays: 30
+        tier4TtlHours: 48
         reflectionEveryHours: 24
-        biliEveryHours: 20
         dutyMaxPerDay: 2
+        speak: true

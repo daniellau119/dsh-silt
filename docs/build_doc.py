@@ -850,8 +850,10 @@ bullets([
 
 doc.add_heading('17　心跳與主動開口', level=1)
 
-doc.add_heading('17.1　值守心跳：60 分鐘一拍', level=2)
-P('index.js 起一個 setInterval，每 60 分鐘呼叫一次 duty.tick()。開機後 8 秒補一拍。')
+doc.add_heading('17.1　值守心跳：對齊下一個固定鐘點', level=2)
+P('index.js 現在不是 setInterval，而是一個單次 timer：duty.nextWakeAt() 算出下一個固定反思鐘點（+1 秒）；'
+  '沒有固定鐘點就對齊「上次反省 + 間隔」。每次 tick 完重排下一個；改設定時 /config 或 silt_duty tune 會立即重排。'
+  '開機後 8 秒先補一拍。')
 P('每一拍做的事：')
 code('store.verify()          ← 每 2 拍才做一次\n'
      'expireStalePendings()   ← 待確認超過 7 天就標成 expired\n'
@@ -860,15 +862,15 @@ code('store.verify()          ← 每 2 拍才做一次\n'
      'inValley()              ← 現在是谷時嗎\n'
      'dutiesToday()           ← 今天跑夠了嗎\n'
      'arm()                   ← 都過了才起一輪')
-P('為什麼是 60 分鐘而不是 120 秒：它要判斷的全是日級的事 —— 反思 24 小時、B 站 20 小時、待確認 7 天。'
-  '而每一拍都要寫一次 runtime.json（lastTickAt）；120 秒等於一天寫 720 次，純粹是白寫。')
+P('仍然保留 60 分鐘的家務上限：不管下一個鐘點多遠，至少每小時做一次 settle / 驗鏈 / 過期清理。'
+  '但反思觸發本身對齊鐘點，不再是每 60 分鐘盲拍。')
 P('唯一對延遲敏感的是 settle()（把跑完的排程從清單裡清掉），但它自己有保底：'
-  '超過 60 分鐘一律放掉，不管排程有沒有真的結束。所以晚一小時處理沒有影響。')
+  '超過 60 分鐘一律放掉，不管排程有沒有真的結束。')
 
 doc.add_heading('17.2　雜湊鏈不是每一拍都驗', level=2)
 P('store.verify() 本身已經很輕：它只比對帳本的 size/mtime 指紋，沒變就回上次結果，不會重放。')
 P('但 duty.js 另外再讓一層：每 VERIFY_EVERY（= 2）拍才真的呼叫 verify()。'
-  '所以實際是約 2 小時驗一次鏈。真要立刻驗（頁面上按「驗鏈」）走的是 verify({ force: true })，跟心跳無關。')
+  '所以是每 2 拍驗一次鏈（家務上限 60 分鐘時約 2 小時）。真要立刻驗（頁面上按「驗鏈」）走的是 verify({ force: true })，跟心跳無關。')
 P('第一次觸發是在第 1 拍（tickCount % VERIFY_EVERY === 1），之後第 3、5、7… 拍。')
 
 doc.add_heading('17.3　主動開口：只有兩道閘', level=2)
@@ -1049,7 +1051,7 @@ P('⚠️ 但這只擋 R（半衰期），**不擋 T4 的權重**：'
 
 doc.add_heading('19.5　誰訂的旋鈕：setBy 與 config.profile', level=2)
 P('反思提示詞有一條規矩：「本人在對話裡親口訂過的數字，你不要自己改」。'
-  '但這一輪是新開的會話，看不到那句話 —— 所以需要一個當時看得到的依據。')
+  '但這一輪不是他正在看的對話，看不到那句話 —— 所以需要一個當時看得到的依據。')
 code('silt_duty read / silt_inject read 都回 setBy：\n'
      '  { injectBudget: { setBy: \'user\' | \'model\' | \'default\', at: \'...\' } }')
 P('⚠️ 這個欄位原本是壞的：`setBy` 掃的是帳本，而頁面改設定走 saveConfig() —— '

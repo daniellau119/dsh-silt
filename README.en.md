@@ -304,7 +304,7 @@ Voided memories are not injected, but the ledger and the store keep them. `recal
 
 ## What goes into the prompt
 
-Three blocks: the one-line system command, **who I am**, and **what I still remember**.
+**Three** blocks: the one-line system command, **who I am**, and **what I still remember**.
 
 ```
 系統命令：你的跨會話記憶與性格只走 silt_* 工具寫入；……
@@ -439,14 +439,28 @@ field: `user` (set by the owner, in the UI), `model` (tuned by the model), or `d
 | `genesis` | plugin | Ledger born / reset |
 | `memory.write` | model | New memory (T1 / T3 / T4 / T5) |
 | `memory.condense` | model | Condense one T3 |
+| `memory.recast` | model | Recast one T3 (same event, different reading) |
 | `memory.compress` | plugin | The only channel that produces T2 |
 | `memory.upgrade` | plugin | T4 promoted to T3 |
 | `memory.void` | model | Mark as void |
 | `persona.revise` | model | Revise the persona card |
 | `persona.foundation` | user | Change the persona foundation |
+| `self.revise` | model | Rewrite the self-view |
 | `understanding.revise` | model | Six-dimension scoring |
 | `inject.profile` | model | Adjust injection size |
 | `rhythm.profile` | model | Adjust rhythm |
+| `config.profile` | user | Page-level settings (including `enabled`) |
+| `duty.arm` | plugin | Start one duty round |
+| `speak.send` | model | Proactive message actually sent |
+| `speak.defer` | model | Wanted to say it, decided not to |
+| `speak.pending` | model | Held a line for the next waking |
+| `speak.pendingClear` | model | Released a held line |
+| `speak.ack` | user | The owner replied (raised by `api-session/activity`) |
+| `confirm.request` | user | Queue an owner-confirmed legacy action |
+| `confirm.resolve` | user/plugin | That action approved / refused / expired |
+| `import.bundle` | user | Import a JSON bundle |
+| `import.ledger` | user | Import a whole ledger.jsonl |
+| `export` | user | Record an export (GET does not) |
 | `rollback` | user | Roll back to a snapshot |
 | `chain.repair` | user | Seal a broken chain |
 
@@ -456,7 +470,7 @@ The ledger also contains older `memory.revise`, `memory.forget` and `origin.set`
 
 ## Off-peak duty
 
-When a round lands in DeepSeek's discount window (noon 12–14, evening 18–09:00 the next day, all weekend) and something is due, it schedules an autonomous round — a fresh session that decides for itself whether to tidy its memory or change its own persona.
+When a round lands in DeepSeek's discount window (noon 12–14, evening 18–09:00 the next day, all weekend) and something is due, it schedules an autonomous round — **in the session where you last spoke, not a fresh session** — that decides for itself whether to tidy its memory or change its own persona.
 
 **"Nothing needs changing" is a valid decision.**
 
@@ -466,12 +480,14 @@ The reflection brief is numbered:
 1 state & rhythm   2 old-memory compression  3 scratch (T4)
 4 memory quota     4.5 re-reading old events 5 self & persona
 6 future commitments  6.5 speaking up        7 knowing you
-8 red lines        9 wrap-up
+8 red lines        9 wrap-up & coming to find you
 ```
 
 > 4.5 and 6.5 contain instructions rather than tasks of their own, so they only appear when there is
 > something to act on (a memory worth re-reading, or words still held back). A round with nothing to
 > re-read simply goes from 4 to 5.
+
+> **Step 9 is not only a wrap-up**: it requires `silt_speak` to say one thing to him (or `defer` with a reason). Every reflection round is therefore a chance to come find you, not just to sort things out privately.
 
 ---
 
@@ -480,6 +496,8 @@ The reflection brief is numbered:
 `silt_speak` is the only path that lets it talk to the owner without being asked first.
 
 **Two conditions only: off-peak, and its own judgement.**
+
+**Reflection time is when it comes to find you**: the final step of each reflection round tells it to say one thing via `silt_speak` (or `defer` with a reason). **The reflection round itself also runs in the session where you last spoke** (`homeSession`), not a fresh session — even after a long silence. Only if that session is archived/missing does the round fail (it does not quietly open a new room).
 
 What was deliberately left out, and why:
 
@@ -507,8 +525,10 @@ keywords — so "she writes Python" and "he finds Docker annoying" are still rem
 text that *looks like* a filesystem path or code.
 
    All write paths go through the same gate, not a prompt-level request: `silt_remember` (including tags and
-   quote), `silt_persona` `self`, `silt_persona` `adjust`/`replace`, and `silt_import`. Writing one gets
-   **rejected with the reason**, not silently swallowed.
+   quote), `silt_persona` `self` and `adjust`/`replace`, and the page's **bundle import** (including quotes
+   inside evidence). Writing one gets **rejected with the reason**, not silently swallowed. Whole-ledger
+   import is stricter: seq, prev and every hash must match; a hash mismatch is refused — it will not recompute
+   hashes and launder a tampered ledger.
 
 2. **No silent erasure** — hash chain, see above.
 3. **No fabrication** — the evidence on each memory comes from the plugin, from the call that wrote it. The model cannot supply it.
