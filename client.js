@@ -1327,33 +1327,176 @@ window.__ModuleLoader__.load({
         }
       }, [state, runSelf.phase, runDutyState.phase, t])
 
-      useEffect(() => {
-        if (state?.cfg) syncBanner()
-      }, [state])
-
-      // 橫幅靠主頁那支輪詢驅動：主頁不在（或還沒讀到配置）時，自己慢慢看
-      useEffect(() => {
-        syncBanner()
-        const tick = () => {
-          if (holdState.current) return
-          fetch(`${API}/state`, { headers: { accept: 'application/json' }, credentials: 'same-origin' })
-            .then((r) => (r.ok ? r.json() : null))
-            .then((j) => {
-              if (!j?.ok) return
-                    syncBanner()
-            })
-            .catch(() => {})
-        }
-        bannerTimer = window.setInterval(tick, 15000)
-        tick()
-        return () => window.clearInterval(bannerTimer)
-      }, [])
+      // ⚠️ 2026-11-25：這裡原本還有兩段掛 B站 橫幅的 useEffect（syncBanner / holdState /
+      //    bannerTimer）—— 那三樣都隨 BiliBanner 刪掉了，但這兩段沒跟著走，
+      //    於是 Panel 一渲染就 `syncBanner is not defined`，整頁空白。
+      //    橫幅那時是「把 Silt 的持倉插進刷B站設定頁」，Silt 不再管 B站，這兩段就不需要了。
 
       useEffect(() => {
         if (state && foundationDraft == null) setFoundationDraft(state.foundation?.text || '')
       }, [state, foundationDraft])
+      // ⚠️ 2026-11-25：`portraitOk` / `portraitV` 也在拆 BiliBanner 時被一起誤刪 ——
+      //    而 `portraitSection` 仍然要用 `portraitV`，於是 Panel 一渲染就
+      //    `portraitV is not defined` 整頁爆掉，看起來就是「裡面甚麼都沒顯示」。
+      // 形象照：先探一下有沒有（沒有就不畫那個框）
+      const [portraitOk, setPortraitOk] = useState(null)
+      const portraitV = state?.runtime?.portraitAt || '1'
+      useEffect(() => {
+        let alive = true
+        fetch(`${API}/portrait`, { method: 'HEAD', credentials: 'same-origin' })
+          .then((r) => alive && setPortraitOk(r.ok))
+          .catch(() => alive && setPortraitOk(false))
+        return () => {
+          alive = false
+        }
+      }, [portraitV])
 
-            /* ── 提示詞分層：這一輪送進模型的那段字，各塊佔多少 ── */
+      // 2026-11-22：形象照不再塞在標題那行（太小），改成跟性格卡一左一右擺在星圖上方。
+      // 沒有 portrait.jpg 就整塊不出現 —— 不留一個空框。
+      const portraitSection =
+        portraitOk === true
+          ? h(
+              'div',
+              { className: 'mn-portrait-card', style: { borderRadius: 14, overflow: 'hidden', border: `1px solid ${C.border1}`, background: C.base } },
+              h('img', {
+                src: `${API}/portrait?t=${portraitV}`,
+                alt: t('title'),
+                style: { display: 'block', width: '100%', height: '100%', minHeight: 360, objectFit: 'cover', objectPosition: '50% 20%' },
+              }),
+            )
+          : null
+
+      const header = h(
+        'header',
+        { className: 'mn-head', style: { display: 'flex', alignItems: 'flex-start', gap: 14, padding: '18px 24px 14px', borderBottom: `1px solid ${C.border1}`, background: C.base } },
+        h(
+          'div',
+          { style: { minWidth: 0 } },
+          h('h1', { className: 'mn-title', style: { fontSize: 19, fontWeight: 650, margin: 0, color: C.text } }, t('title')),
+          h('div', { className: 'mn-sub', style: { fontSize: 12, marginTop: 2, color: C.dim } }, t('subtitle')),
+        ),
+        h(
+          'div',
+          { className: 'mn-head-right', style: { marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' } },
+          h(LangToggle, null),
+          chain.ok
+            ? h('span', { className: 'mn-chip mn-ok' }, `${t('chain_ok')} · ${chain.count ?? 0} ${t('records')}`)
+            : chain.sealed
+              ? h('span', { className: 'mn-chip mn-warn' }, `${t('chain_sealed')} · #${(chain.brokenAt ?? 0) + 1}`)
+              : h('span', { className: 'mn-chip mn-err' }, `${t('chain_bad')} · #${(chain.brokenAt ?? 0) + 1}`),
+          pending.length ? h('span', { className: 'mn-chip mn-warn' }, `${t('pending')} · ${pending.length}`) : null,
+          h(
+            'div',
+            { className: 'mn-inline' },
+            h('span', { className: 'mn-hint' }, t('master')),
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'mn-sw',
+                role: 'switch',
+                'aria-checked': cfg.enabled ? 'true' : 'false',
+                'aria-label': t('master'),
+                onClick: () => void post('/config', { patch: { enabled: !cfg.enabled } }),
+              },
+              h('i'),
+            ),
+          ),
+        ),
+      )
+
+      /** 一鍵導出：把 ledger.jsonl 原樣交下去（插件那邊同步寫一份 ledger.export.jsonl）。 */
+      const onExport = async () => {
+        setBusy('ledger.export')
+        try {
+          // 一次下載拿檔案；另打一次同樣的端點只碰 POST 那一半（寫副本 + 回摘要）
+          const download = fetch(`${API}/ledger.export`, { cache: 'no-store' })
+          const saved = post('/ledger.export', {}, { quiet: true })
+          const [res, head] = await Promise.all([download, saved])
+          if (!res.ok) {
+            const why = head?.error || `HTTP ${res.status}`
+            setNote(`${t('error')}: ${why}`)
+            return
+          }
+          const text = await res.text()
+          const blob = new Blob([text], { type: 'application/x-ndjson' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `ledger-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '')}.jsonl`
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+          window.setTimeout(() => URL.revokeObjectURL(url), 4000)
+          setNote(
+            t('ledger_export_done', {
+              file: head?.file || 'ledger.export.jsonl',
+              n: head?.records ?? text.split('\n').filter((s) => s.trim()).length,
+              kb: Math.round((head?.bytes ?? text.length) / 1024),
+            }),
+          )
+        } catch (err) {
+          setNote(`${t('error')}: ${String(err?.message || err)}`)
+        } finally {
+          setBusy('')
+        }
+      }
+
+      /** 導入 ledger.jsonl：先讀檔、驗鏈，只有本人再按一次才真的接上。 */
+      const onImportFile = async (event) => {
+        const file = event.target.files?.[0]
+        event.target.value = ''
+        if (!file) return
+        setBusy('ledger.import')
+        try {
+          const text = await file.text()
+          // ⚠️ 2026-11-25：這裡的註解一直寫「只有本人再按一次才真的接上」，但程式碼直接送了。
+          //    導入會**取代整本帳**，比清空重來更 destructive，所以真的要做一次確認。
+          //    後端 /ledger.import 現在也要 confirm:true（跟 /reset 同一道閘）。
+          const okGo = typeof window === 'undefined' ? true : window.confirm(t('ledger_import_confirm'))
+          if (!okGo) {
+            setBusy('')
+            return
+          }
+          const res = await post('/ledger.import', { text, source: file.name, confirm: true }, { quiet: true })
+          if (res?.ok) {
+            setNote(t('ledger_import_done', { n: res.imported, chain: res.chain?.ok ? t('chain_ok') : t('chain_sealed'), replaced: res.replaced || '—' }))
+          } else {
+            setNote(t('ledger_import_bad', { err: res?.error || t('error') }))
+          }
+        } catch (err) {
+          setNote(t('ledger_import_bad', { err: String(err?.message || err) }))
+        } finally {
+          setBusy('')
+        }
+      }
+
+      if (!state) {
+        return h(
+          'div',
+          { className: 'mn-root', style: rootStyle },
+          header,
+          h('div', { className: 'mn-body', style: bodyStyle }, error ? h('div', { className: 'mn-err', style: { color: C.err } }, `${t('error')}: ${error}`) : h('div', { className: 'mn-empty', style: { color: C.dim } }, '…')),
+        )
+      }
+
+
+      // ⚠️ 2026-11-25：`mapSection` 也在拆 BiliBanner 時被一起誤刪，從 51cc4c1 還原。
+      const mapSection = h(
+        Section,
+        { title: t('star_map'), hint: t('star_hint') },
+        h(Constellation, { galaxy: state.galaxy, coreLabel: t('core'), dimLabel }),
+        h(
+          'div',
+          { className: 'mn-legend' },
+          Object.keys(DIM_COLORS)
+            .filter((d) => d !== 'other')
+            .map((d) => h('span', { key: d }, h('i', { className: 'mn-dot', style: { background: DIM_COLORS[d] } }), dimLabel(d))),
+          h('span', { className: 'mn-hint' }, `${state.counts?.active ?? 0} ${t('memories')}`),
+        ),
+      )
+
+      /* ── 提示詞分層：這一輪送進模型的那段字，各塊佔多少 ── */
       // 資料由 /state 的 injection 帶過來（那是量出來的真實長度，不是估的）。
       const PALETTE = {
         foundation: '#5b7cfa',
