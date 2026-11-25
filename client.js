@@ -1089,6 +1089,42 @@ window.__ModuleLoader__.load({
       )
     }
 
+    /* ───────────────────────── 側欄圖示 ───────────────────────── */
+
+    /**
+     * 左上角／側欄那一顆星圖圖示。
+     *
+     * ⚠️ 2026-11-25：**這個函式上一輪被我誤刪了。**
+     *    拆 BiliBanner 時按行號整段刪，範圍跨過了它的結尾，
+     *    把這個獨立的元件一起帶走。註冊那行還在用 Glyph，於是
+     *    `api.register(..., Glyph)` 拿到 undefined ⇒ 入口直接消失。
+     *    從 51cc4c1 原樣還原。
+     */
+    function Glyph(props) {
+      const size = Math.max(12, Math.min(40, props?.size || 18))
+      const active = Boolean(props?.active)
+      return h(
+        'svg',
+        { width: size, height: size, viewBox: '0 0 24 24', 'aria-hidden': true, style: { display: 'block' } },
+        h('circle', { cx: 12, cy: 12, r: 2.4, fill: 'currentColor', opacity: active ? 1 : 0.9 }),
+        h(
+          'g',
+          { stroke: 'currentColor', strokeWidth: 0.9, opacity: active ? 0.85 : 0.55, fill: 'none' },
+          h('path', { d: 'M6.5 6.5 L12 12 L18 6.5' }),
+          h('path', { d: 'M12 12 L8 18.5' }),
+          h('path', { d: 'M12 12 L16.5 18' }),
+        ),
+        h(
+          'g',
+          { fill: 'currentColor' },
+          h('circle', { cx: 6.5, cy: 6.5, r: 1.35 }),
+          h('circle', { cx: 18, cy: 6.5, r: 1.15 }),
+          h('circle', { cx: 8, cy: 18.5, r: 1 }),
+          h('circle', { cx: 16.5, cy: 18, r: 1.25 }),
+        ),
+      )
+    }
+
     /* ───────────────────────── 主頁 ───────────────────────── */
     function Panel() {
       const [state, setState] = useState(null)
