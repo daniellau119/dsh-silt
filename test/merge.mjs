@@ -232,7 +232,7 @@ try {
       {
         ids,
         title: '夜班的真實條件',
-        body: '夜班的內容'.repeat(25),
+        body: '夜班的內容'.repeat(27),
         reason: '三條在講同一段夜班',
       },
       ctx,
@@ -241,7 +241,7 @@ try {
 
     const duty = makeDuty({ ctx: {}, store: s })
     const plan = duty.condensePlan()
-    ok(!plan.some((x) => x.id === r.memory.id), 'base 取 972 → 這一輪不列（317 > 250）')
+    ok(!plan.some((x) => x.id === r.memory.id), 'base 取 972 → 這一輪不列（343 > 143）')
 
     set(s, r.memory.id, { originalLen: 250 })
     const plan2 = duty.condensePlan()

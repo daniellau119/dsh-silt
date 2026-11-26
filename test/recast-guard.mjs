@@ -88,6 +88,10 @@ console.log('\n4) 正常 condense 仍然重置時鐘（對照組）')
 {
   const s = fresh()
   const id = s.writeMemory({ tier: 3, title: '正常壓縮', body: '這條會被正常壓短'.repeat(20), domain: 'feeling', dims: ['personality'] }, ctx).memory.id
+  // 2026-11-27：沉 T2 要「夠短而且夠老」，所以先把時鐘撥到 30 天前 ——
+  // 不然「lastCondensedAt 有更新」會被「寫入與壓縮落在同一毫秒」搞成假失敗。
+  const oldDate = new Date(Date.now() - 30 * 86400000).toISOString()
+  s.memories.set(id, { ...s.memories.get(id), bornAt: oldDate, lastCondensedAt: oldDate })
   const before = s.memories.get(id)
   const r = s.condense({ id, title: '壓短後', body: '壓短了', targetLen: 20 }, ctx)
   ok(r.ok === true, 'condense 成功')

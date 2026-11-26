@@ -203,6 +203,9 @@ console.log('\n中 11b) condense 沉 T2 的回滾也走 compress 這條路')
 {
   const s = fresh()
   const id = s.writeMemory({ tier: 3, title: '會沉下去的', body: '內容很長'.repeat(60), domain: 'feeling', dims: ['personality'] }, ctx).memory.id
+  // 2026-11-27：沉 T2 要「夠短而且夠老」，先把它變老才走得到 compress 那條路
+  const old = new Date(Date.now() - 200 * 86400000).toISOString()
+  s.memories.set(id, { ...s.memories.get(id), bornAt: old, firstSeen: old.slice(0, 10), lastCondensedAt: old })
   const c = s.condense({ id, title: '壓到很短', body: '很短', targetLen: 10 }, ctx)
   ok(c.ok === true, 'condense 成功')
   ok(c.tier === 2, `沉成 T2（${c.tier}）`)

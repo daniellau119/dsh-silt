@@ -133,7 +133,8 @@ memories become immortal**, not whether those things actually matter.
 
 In most systems decay only decides *who goes into the prompt first*; the memory itself loses nothing.
 Here a T3 is genuinely re-told every 7 days, its target length following a power law
-(`initial × (1 + 0.14·T/s)^-0.5`), settling into T2 in roughly 175 days.
+(`initial × (1 + 0.14·T/s)^-0.5`), settling into T2 in roughly 175 days —
+and **never earlier** than 171 days × `1.2^R` (see "The model cannot reach T2" below).
 
 Forgetting costs actual content — it is not a change of position.
 
@@ -240,9 +241,16 @@ model → condense(id, title, body, mode)
         mode = recast?
         ├─ yes → stays at T3 forever (a change of understanding, not of length)
         └─ no  → result ≤ 200 chars?
-                 ├─ yes → T2 (system-generated, terminal)
-                 └─ no  → still T3, wait for the next round
+                 ├─ no  → still T3, wait for the next round
+                 └─ yes → old enough? (≥ 171 days × 1.2^R)
+                          ├─ yes → T2 (system-generated, terminal)
+                          └─ no  → still T3 (the reply says how long is left)
 ```
+
+**Why two gates**: T2 is the 720-day half-life terminal state. With length alone, a 10-day-old T3
+written a bit shorter would be pinned as a "settled gist" on the spot — the opposite of
+"roughly 175 days to T2". The age gate is how long the longest T3 takes to reach 200 chars (171 days),
+scaled by `1.2^R`.
 
 `silt_remember` only accepts `tier` 1 / 3 / 4 / 5 — **`tier: 2` is rejected outright**.
 
