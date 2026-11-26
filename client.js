@@ -1464,14 +1464,16 @@ window.__ModuleLoader__.load({
         overflow: 'hidden',
         border: `1px solid ${C.border1}`,
         background: C.base,
-        // ⭐ 1:1，而且高度跟右邊那張性格卡一樣高。
-        //    靠三件事一起做到：
-        //      ① 外層 grid 兩欄都 align-self: stretch ⇒ 兩欄高度相等
-        //      ② 這張卡 height: 100% ⇒ 撐滿那一欄的高度
-        //      ③ aspect-ratio: 1/1 ⇒ 寬度由高度反推（正方形）
-        //    所以性格卡變高，這張跟著變大；反之亦然。
-        height: '100%',
+        // ⭐ 2026-11-28：正方形，但**寬度由欄位決定**（上限 260），高度用 aspect-ratio 反推。
+        //
+        // 舊寫法是 height:100% + aspect-ratio:1/1，讓邊長等於性格卡的高度。那在
+        // grid 的 auto 欄裡是循環依賴：性格卡一高，算出來的寬度就超過欄寬，
+        // 而這張卡是 position:relative，會直接蓋住隔壁的性格卡。
+        // 現在正方形有固定上限，永遠不會壓過去；兩張卡之間也留得下間隙。
+        width: '100%',
+        height: 'auto',
         aspectRatio: '1 / 1',
+        alignSelf: 'start',
         boxSizing: 'border-box',
         position: 'relative',
       }
@@ -2298,20 +2300,19 @@ window.__ModuleLoader__.load({
           note ? h('div', { className: 'mn-note', style: { fontSize: 12, color: C.dim } }, note) : null,
           // 形象照（左）＋ 性格卡（右）—— 2026-11-22 他要置頂，擺在星圖之前
           //
-          // ⭐ 2026-11-25：**左邊正方形，邊長 = 右邊那張性格卡的高度。**
-          //    外層 grid 兩欄 `align-items: stretch`（預設）⇒ 等高；
-          //    左邊那張 height: 100% + aspect-ratio: 1/1 ⇒ 寬度由高度反推。
-          //    左欄宣告成 `auto`，讓它由內容（那張正方形卡）決定寬度，
-          //    右欄 1fr 吃掉剩下的。
+          // ⭐ 2026-11-28：左邊正方形有**固定上限**（150–260），右邊性格卡吃掉剩下的。
+          //    舊版讓正方形的邊長等於性格卡高度，性格卡一高，正方形就超出左欄、
+          //    蓋住右邊那張（position:relative 會蓋在後面兄弟節點上面）。
+          //    現在兩欄之間有 20px 間隙，正方形再大也不會壓到性格卡。
           h(
             'div',
             {
               className: 'mn-portrait-row',
               style: {
                 display: 'grid',
-                gridTemplateColumns: 'auto 1fr',
-                gap: 16,
-                alignItems: 'stretch',
+                gridTemplateColumns: 'minmax(150px, 260px) minmax(0, 1fr)',
+                gap: 20,
+                alignItems: 'start',
                 marginBottom: 16,
               },
             },

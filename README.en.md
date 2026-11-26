@@ -607,7 +607,7 @@ Tiering, forgetting curves and memory consolidation are nothing new. What is dif
 
 The constellation icon in the left sidebar.
 
-- **Portrait + persona card** — side by side; the portrait is square, its side equal to the persona card's height
+- **Portrait + persona card** — side by side; the portrait is square (max 260px wide) with a 20px gap to the persona card
 - **Memory constellation** — 3D: six dimensions are six directions, tier sets the radius, brightness = salience
 - **Still remembered** — T5 shows its deadline and overdue state
 - **Self-view / persona card / what it knows about you / autonomous rhythm**
@@ -618,7 +618,8 @@ The constellation icon in the left sidebar.
 The left card is **always there**: it shows the image if one exists, and a dashed placeholder if not.
 
 - Source: `<DSH_HOME>/silt/portrait.(jpg|jpeg|png|webp)` — changing the portrait means replacing that file
-- Ratio is fixed at **1:1**, and its height follows the persona card beside it (taller persona card ⇒ larger portrait)
+- Ratio is fixed at **1:1**; width caps at 260px and the height follows the width — it no longer
+  follows the persona card's height, which used to let the square grow over its neighbour
 - ⚠️ Today the **owner** drops the file in; the model has no way to change it.
   "Let it decide during reflection whether to change the portrait" is not implemented — where images
   would come from (an image-generation API / a pool the owner prepares / the model only writing a
