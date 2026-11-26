@@ -179,6 +179,39 @@ console.log('\n中 8) condense 回滾要把新條也拿掉')
   ok(rb.ok === true, '回滾成功')
   ok(!s.memories.has(newId) || s.memories.get(newId)?.archived, `回滾後新條不再活著（${newId}）`)
   ok(s.memories.size < before, `條數變少（${s.memories.size} < ${before} = 新條被拿走）`)
+  ok(s.activeMemories().some((m) => m.id === id), '原條回到 activeMemories')
+}
+
+console.log('\n中 11) compress 回滾：原條要真的回到 active，不能只是「不在了」')
+{
+  const s = fresh()
+  const id = s.writeMemory({ tier: 3, title: '會被吸走的', body: '這條要被吸走'.repeat(40), domain: 'feeling', dims: ['personality'] }, ctx).memory.id
+  const r = s.compress({ gist: { tier: 2, title: '一句概', body: '一句話講完', domain: 'feeling', dims: ['personality'] }, ids: [id] }, ctx)
+  ok(r.ok === true, 'compress 成功')
+  ok(s.memories.get(id)?.archived === true, '壓縮後原條歸檔')
+
+  const rb = s.rollback(r.snapshotId)
+  ok(rb.ok === true, `回滾成功（${rb.scope}）`)
+  ok(!s.memories.has(r.memory.id), '生出來的概被拿走')
+  const back = s.memories.get(id)
+  ok(back && !back.archived, `原條不再是 archived（實際 ${back?.archived}）`)
+  ok(!back?.supersededBy && !back?.archivedAt, 'supersededBy / archivedAt 清掉了')
+  ok(s.activeMemories().some((m) => m.id === id), '原條回到 activeMemories（會再進提示詞）')
+}
+
+console.log('\n中 11b) condense 沉 T2 的回滾也走 compress 這條路')
+{
+  const s = fresh()
+  const id = s.writeMemory({ tier: 3, title: '會沉下去的', body: '內容很長'.repeat(60), domain: 'feeling', dims: ['personality'] }, ctx).memory.id
+  const c = s.condense({ id, title: '壓到很短', body: '很短', targetLen: 10 }, ctx)
+  ok(c.ok === true, 'condense 成功')
+  ok(c.tier === 2, `沉成 T2（${c.tier}）`)
+
+  const rb = s.rollback(c.snapshotId)
+  ok(rb.ok === true, `回滾成功（${rb.scope}）`)
+  ok(!s.memories.has(c.memory.id), '沉出來的概被拿走')
+  ok(s.memories.get(id)?.archived !== true, '原條不再是 archived')
+  ok(s.activeMemories().some((m) => m.id === id), '原條回到 activeMemories')
 }
 
 rmSync(home, { recursive: true, force: true })

@@ -45,7 +45,7 @@ The whole design comes down to four sentences:
 
 | | What it is | Limit | Base half-life | In prompt |
 |:--:|---|:--:|:--:|:--:|
-| **T1** | Facts and rules: facts that stay true, and rules to follow every time | 200 | 100 yr | ✅ |
+| **T1** | Facts and rules: facts that stay true **and belong in every prompt**, and rules to follow every time | 200 | 100 yr | ✅ |
 | **T2** | Gists settled out of experience | 200 | 720 d | ✅ |
 | **T3** | Experiences worth keeping (**no project details**) | 1000 | 180 d | ✅ |
 | **T4** | Scratch: undecided, parked for now | 300 | follows TTL (48 h default) | ❌ |
@@ -56,6 +56,11 @@ The whole design comes down to four sentences:
 > A rule has to say "when this happens ⇒ do this ⇒ because of that", but the **limit stays 200 chars** —
 > the answer is to tighten the wording, not to widen the bowl.
 > Dates are fine to write: a date is *when this happened*, and that is part of the memory.
+>
+> **T1 has to clear two gates: still true tomorrow, and worth being in every prompt.**
+> "Useful if I look it up later" — company registration numbers, CEO names, event dates,
+> customer lists, product lines — goes to T3: it compresses, fades, and has an exit.
+> T1 is a hundred-year seat, not "a more important memory".
 >
 > **Why T3 refuses project details**: which file changed, what got installed, how deep the debug went —
 > the code already records that. Spending a T3 slot on it only crowds out actual people and events.
@@ -278,17 +283,50 @@ T3, never settle into T2 — the whole compression ladder is bypassed. So:
 
 ---
 
+## Merge: several rows into one
+
+`silt_merge` folds **2–3 T3 memories** into one. **T1 is paused** (2026-11-27): details merged away in T1 never come back; tighten the two intake gates first, then see how much real duplication is left.
+
+```
+several T3 → one T3 (not a T2 gist)
+originals  archived (not voided — they were not wrong) + mergedInto
+new row    mergedFrom, inherits the earliest dates and clock
+```
+
+Same tier because merging is tidying, not forgetting: folding into T2 would open a back door to "never fade".
+
+| Fence | Rule |
+|---|---|
+| Read before merging | every id must have been **targeted-recalled in this session**; titles alone and `countAsRecall:false` scans do not count (`seenInSession`) |
+| T3, 2–3 | voided, archived and mixed-tier rows are refused; T1 / T2 / T4 / T5 are out of scope for now |
+| No borrowed lifetime | `bornAt` / `firstSeen` / `lastCondensedAt` take the earliest; `originalLen` takes the max; `recastCount` takes the max; R is seeded from the ledger payload's `recallSeed` |
+
+Originals are archived and rollback restores them; `silt_recall` with `includeArchived` finds them and
+marks `mergedInto`. **Not merging is not a failure** — and merging does not keep a T3 fresh: it still
+follows its original clock.
+
+---
+
 ## Void: never rewrite history, only add a record
 
 ```
 old  T1 user marrying 2027-03            ← not a single character changed
        voided: true
-       voidedReason: user said that was wrong, it's 2027-06
+       voidedReason: 本人指正: it's 2027-06, not 03
        replacedBy: <id of the new one>
 new  T1 user marrying 2027-06
 ```
 
 Rewriting means "history was erased". Voiding means "this is what I knew at the time; later I found out otherwise".
+
+**Voiding has two uses, told apart by a `reason` prefix:**
+
+| Prefix | Used for | Example |
+|---|---|---|
+| `本人指正：…` | He says the old row was wrong or has changed | "本人指正: it's 2027-06, not 03" |
+| `分類遷移：…` | The fact is fine; it only moved tier or got consolidated | "分類遷移: T1 → T3, content unchanged" |
+
+The prefix is not decoration: the ledger needs it to tell "I actually got this wrong" from "I merely re-organised", or that signal rots. A reclassification is not a licence to drop detail — the fact itself must not change shape when it moves.
 
 Voided memories are not injected, but the ledger and the store keep them. `recall` still finds them, tagged `voided: true`.
 
@@ -298,7 +336,7 @@ Voided memories are not injected, but the ledger and the store keep them. `recal
 |---|---|---|:--:|
 | Archived | plugin | Compressed away | ❌ |
 | Expired | time | T5 reached its deadline | ✅ tagged ⏰ |
-| Voided | one word from the user | Turned out to be wrong | ❌ |
+| Voided | 本人指正 / 分類遷移 | Turned out wrong / moved or consolidated | ❌ |
 
 ---
 
@@ -378,8 +416,9 @@ Every mutation carries before/after snapshots and can be rolled back by id.
 |---|---|
 | `silt_recall` | Search memories. The only entry point that can see T4 |
 | `silt_remember` | Write one (T1 / T3 / T4 / T5 — **T2 cannot be written**) |
-| `silt_void` | Mark as void (content unchanged) |
+| `silt_void` | Mark as no longer used (`本人指正` or `分類遷移`; content unchanged, still searchable) |
 | `silt_condense` | Retell a T3: `condense` to say less, `recast` to re-understand |
+| `silt_merge` | Fold 2–3 same-tier similar memories into one (must have been recalled first) |
 | `silt_persona` | Persona card and self-view |
 | `silt_speak` | Reach the owner unprompted — **valley hours is the only gate** |
 | `silt_understanding` | Six-dimension scoring |
@@ -549,7 +588,7 @@ Tiering, forgetting curves and memory consolidation are nothing new. What is dif
 | **What fades is the content** | Other decays only affect ranking and eviction; a T3 here actually gets shorter |
 | **Forecasts have deadlines** | Past due, it stays in view and forces handling instead of rotting quietly |
 | **Voiding is a full mechanism** | Many systems have no contradiction resolution at all — wrong facts just sit there |
-| **One-to-one** | No merging several memories into a gist, which is what keeps the compression history fully traceable |
+| **Merging is optional** | Same-tier 2–3 rows become one (not a gist); read them first, originals archived and rollback-able |
 | **Tiers by lifecycle** | Not hot/warm/cold, but "forever true / gist / will fade" |
 
 **Not included**: vector search (paraphrases with different wording won't match), automatic contradiction detection, metamemory, multi-tenant isolation.
